@@ -2,6 +2,9 @@
 import requests
 from django.conf import settings
 
+callback_url = settings.PAYDUNYA_WEBHOOK_URL   # ← MAGIQUE
+
+
 class PayDunyaClient:
     def __init__(self):
         self.base_url = settings.PAYDUNYA['BASE_URL']
@@ -20,7 +23,7 @@ class PayDunyaClient:
             "invoice": {
                 "total_amount": amount,
                 "description": description,
-                "callback_url": "https://buudi.africa/api/v1/paydunya-callback/"  # DOIT ÊTRE ICI !
+                "callback_url": callback_url # DOIT ÊTRE ICI !
             },
             "store": {
                 "name": "Buudi Transfert",
