@@ -45,8 +45,13 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     # AJOUTE TON URL NGROK ICI
-    'conferval-fearfully-emogene.ngrok-free.dev',
+    'buudi-inter-backend.onrender.com'
 ]
+
+
+
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
