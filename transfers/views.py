@@ -185,11 +185,11 @@ class ConfirmDebitView(APIView):
         })
 
 
-# 3. WEBHOOK UNIQUE → GÈRE TOUT (Wave, Orange, Moov, MTN) – 100% AUTOMATIQUE
+
+# transfers/views.py → WEBHOOK FINAL (PLUS JAMAIS DE TIMEOUT)
 @csrf_exempt
 def paydunya_webhook(request):
-    
-    logger.info("WEBHOOK PAYDUNYA REÇU")
+    logger.info("WEBHOOK PAYDUNYA REÇU ! IP: %s", request.META.get('REMOTE_ADDR', 'unknown'))
 
     if request.method != 'POST':
         return JsonResponse({"status": "ok"}, status=200)
@@ -200,51 +200,42 @@ def paydunya_webhook(request):
     except:
         return JsonResponse({"status": "ok"}, status=200)
 
-    # ÉVÉNEMENT : PAIEMENT CONFIRMÉ (Wave, Orange, Moov, MTN)
+    # 1. PAIEMENT CONFIRMÉ → on lance le crédit
     if data.get('event') == 'invoice_status' and data.get('status') == 'completed':
-        invoice_token = data.get('invoice_token')
-        if not invoice_token:
-            return JsonResponse({"status": "ok"}, status=200)
+        token = data.get('invoice_token')
+        if token:
+            try:
+                transfer = Transfer.objects.get(paydunya_invoice_token=token, status='debited')
+                logger.info(f"PAIEMENT CONFIRMÉ → Transfert {transfer.id} → Lancement crédit automatique")
 
-        try:
-            transfer = Transfer.objects.get(
-                paydunya_invoice_token=invoice_token,
-                status='debited'
-            )
-            logger.info(f"PAIEMENT CONFIRMÉ → Lancement crédit pour transfert {transfer.id}")
+                # Lancement en arrière-plan (aucun timeout)
+                from threading import Thread
+                Thread(target=_launch_credit_automatic, args=(transfer,)).start()
 
-            # Lancement du crédit (même fonction que avant, mais en asynchrone via webhook)
-            _launch_credit_automatic(transfer)
+            except Transfer.DoesNotExist:
+                logger.warning("Transfert non trouvé pour ce token")
+            except Exception as e:
+                logger.error(f"ERREUR WEBHOOK → {e}", exc_info=True)
 
-        except Transfer.DoesNotExist:
-            logger.warning("Transfert non trouvé ou déjà traité")
-        except Exception as e:
-            logger.error(f"ERREUR LANCEMENT CRÉDIT VIA WEBHOOK → {e}", exc_info=True)
-
-    # ÉVÉNEMENT : STATUT FINAL DU DÉBOURSEMENT
+    # 2. DÉBOURSEMENT TERMINÉ
     elif data.get('disburse_id'):
         disburse_id = data.get('disburse_id')
         try:
             transfer = Transfer.objects.get(disburse_id=disburse_id)
             client = PayDunyaClient()
-            check = client.check_status(transfer.disburse_token)
+            check = client.check_status(transfer.disburse_token or "")
             
-            if check.get('response_code') == '00':
-                final_status = check.get('status')
-            else:
-                final_status = data.get('status', 'failed')
-
-            transfer.status = 'success' if final_status == 'success' else 'failed'
+            status = 'success' if check.get('response_code') == '00' and check.get('status') == 'success' else 'failed'
+            transfer.status = status
             transfer.save()
             
-            logger.info(f"TRANSFERT FINAL → MB{transfer.id} = {transfer.status.upper()}")
+            logger.info(f"TRANSFERT TERMINÉ → MB{transfer.id} = {status.upper()}")
 
-        except Transfer.DoesNotExist:
-            logger.warning(f"Disburse ID {disburse_id} inconnu")
         except Exception as e:
-            logger.error(f"ERREUR WEBHOOK DÉBOURSEMENT → {e}", exc_info=True)
+            logger.error(f"ERREUR DÉBOURSEMENT → {e}")
 
     return JsonResponse({"status": "ok"}, status=200)
+
 
 
 # FONCTION PRIVÉE → Lancement du crédit (utilisée par le webhook)
@@ -260,7 +251,7 @@ def _launch_credit_automatic(transfer):
             phone=transfer.to_phone,
             amount=int(transfer.amount_sent),
             mode=transfer.to_wallet,
-            callback_url=settings.PAYDUNYA_WEBHOOK_URL,  # dynamique (ngrok ou Render)
+            callback_url="https://buudi-inter-backend.onrender.com/api/transfer/webhook-paydunya/",  # dynamique (ngrok ou Render)
             disburse_id=f"MB{transfer.id}"
         )
 
