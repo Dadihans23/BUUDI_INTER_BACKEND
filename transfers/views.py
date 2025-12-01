@@ -175,6 +175,9 @@ class ConfirmDebitView(APIView):
 
         # ORANGE / MOOV / MTN → RIEN ICI
         # → Le webhook invoice_status va lancer le crédit automatiquement
+        
+        logger.info(f"Paiement réussi ! Crédit en cours dans quelques secondes...")
+
         return Response({
             "message": "Paiement réussi ! Crédit en cours dans quelques secondes...",
             "status": "debited",
@@ -185,6 +188,7 @@ class ConfirmDebitView(APIView):
 # 3. WEBHOOK UNIQUE → GÈRE TOUT (Wave, Orange, Moov, MTN) – 100% AUTOMATIQUE
 @csrf_exempt
 def paydunya_webhook(request):
+    
     logger.info("WEBHOOK PAYDUNYA REÇU")
 
     if request.method != 'POST':
@@ -305,6 +309,17 @@ def _launch_credit_automatic(transfer):
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 # transfers/views.py
 class CreditReceiverView(APIView):
     def post(self, request):
@@ -317,7 +332,7 @@ class CreditReceiverView(APIView):
         client = PayDunyaClient()
 
         # URL webhook en prod (ngrok ou domaine)
-        callback_url = "https://buudi.africa/api/trasnfer/webhook-paydunya"
+        callback_url = "https://buudi.africa/api/transfer/webhook-paydunya"
 
         disburse = client.disburse_create(
             phone=transfer.to_phone,

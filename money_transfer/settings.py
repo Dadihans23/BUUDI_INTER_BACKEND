@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_URL = os.getenv('RENDER_EXTERNAL_URL') or os.getenv('BASE_URL', 'http://127.0.0.1:8000')
 
 # Webhook PayDunya (ngrok ou Render)
-PAYDUNYA_WEBHOOK_URL = f"{BASE_URL.rstrip('/')}/api/transfer/webhook-paydunya"
+PAYDUNYA_WEBHOOK_URL = f"{BASE_URL.rstrip('/')}/api/transfer/webhook-paydunya/"
 
 # Optionnel : pour les logs
 print(f"WEBHOOK URL → {PAYDUNYA_WEBHOOK_URL}")
