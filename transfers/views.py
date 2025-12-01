@@ -332,7 +332,7 @@ class CreditReceiverView(APIView):
         client = PayDunyaClient()
 
         # URL webhook en prod (ngrok ou domaine)
-        callback_url = "https://buudi.africa/api/transfer/webhook-paydunya"
+        callback_url = "https://buudi-inter-backend.onrender.com/api/transfer/webhook-paydunya/"
 
         disburse = client.disburse_create(
             phone=transfer.to_phone,
