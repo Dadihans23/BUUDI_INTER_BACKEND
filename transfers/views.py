@@ -325,7 +325,7 @@ class CreditReceiverView(APIView):
     def post(self, request):
         transfer_id = request.data.get('transfer_id')
         try:
-            transfer = Transfer.objects.get(id=transfer_id, status='debited')
+            transfer = Transfer.objects.get(id=transfer_id)
         except Transfer.DoesNotExist:
             return Response({"error": "Transfert non débité"}, status=404)
 
