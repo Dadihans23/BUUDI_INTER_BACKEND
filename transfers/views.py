@@ -155,33 +155,34 @@ class ConfirmDebitView(APIView):
         if not response.get('success'):
             return Response({"error": "Paiement échoué", "details": response}, status=400)
 
-        # ON MARQUE UNIQUEMENT COMME DÉBITÉ
-        transfer.status = 'debited'
+        # CAS 1 : ORANGE / MOOV / MTN → OTP validé = DÉBIT RÉEL
+        if transfer.from_wallet != 'wave-ci':
+            transfer.status = 'debited'
+            transfer.paydunya_payment_ref = response.get('transaction_id', '')
+            transfer.save()
+            logger.info(f"DÉBIT RÉEL → Transfert {transfer.id} marqué 'debited'")
+            return Response({
+                "message": "Paiement réussi ! Crédit en cours dans quelques secondes...",
+                "status": "debited"
+            })
+
+        # CAS 2 : WAVE → on a juste l'URL, PAS de débit encore
+        wave_url = response.get('url')
+        if not wave_url:
+            return Response({"error": "Aucune URL Wave reçue"}, status=500)
+
+        # ON NE CHANGE PAS LE STATUT EN 'debited' → on crée un nouveau statut clair
+        transfer.status = 'pending_wave'  # ou 'waiting_wave_payment'
         transfer.paydunya_payment_ref = response.get('transaction_id', '')
         transfer.save()
 
-        logger.info(f"PAIEMENT CONFIRMÉ → Transfert {transfer.id} marqué 'debited'")
-
-        # WAVE → redirection
-        if transfer.from_wallet == 'wave-ci':
-            wave_url = response.get('url')
-            if wave_url:
-                return Response({
-                    "message": "Redirigez vers Wave pour finaliser",
-                    "redirect_url": wave_url,
-                    "status": "debited",
-                    "info": "Le crédit sera lancé automatiquement après validation Wave"
-                })
-
-        # ORANGE / MOOV / MTN → RIEN ICI
-        # → Le webhook invoice_status va lancer le crédit automatiquement
-        
-        logger.info(f"Paiement réussi ! Crédit en cours dans quelques secondes...")
+        logger.info(f"WAVE REDIRECTION → Transfert {transfer.id} en attente de paiement réel")
 
         return Response({
-            "message": "Paiement réussi ! Crédit en cours dans quelques secondes...",
-            "status": "debited",
-            "info": "Tout est automatique via PayDunya"
+            "message": "Redirigez l'utilisateur vers Wave pour payer",
+            "redirect_url": wave_url,
+            "status": "pending_wave",
+            "info": "Le débit sera confirmé automatiquement quand l'utilisateur paiera sur Wave"
         })
 
 
@@ -205,7 +206,7 @@ def paydunya_webhook(request):
         token = data.get('invoice_token')
         if token:
             try:
-                transfer = Transfer.objects.get(paydunya_invoice_token=token, status='debited')
+                transfer = Transfer.objects.get(paydunya_invoice_token=token, status='pending_wave')
                 logger.info(f"PAIEMENT CONFIRMÉ → Transfert {transfer.id} → Lancement crédit automatique")
 
                 # Lancement en arrière-plan (aucun timeout)
@@ -216,6 +217,8 @@ def paydunya_webhook(request):
                 logger.warning("Transfert non trouvé pour ce token")
             except Exception as e:
                 logger.error(f"ERREUR WEBHOOK → {e}", exc_info=True)
+
+
 
     # 2. DÉBOURSEMENT TERMINÉ
     elif data.get('disburse_id'):
