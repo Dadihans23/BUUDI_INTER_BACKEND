@@ -10,6 +10,8 @@ import logging
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+import requests
+
 # transfers/views.py → UTILISE LA VARIABLE DYNAMIQUE
 from django.conf import settings
 
@@ -328,13 +330,26 @@ class CreditReceiverView(APIView):
         # URL webhook en prod (ngrok ou domaine)
         callback_url = "https://buudi-inter-backend.onrender.com/api/transfer/webhook-paydunya/"
 
-        disburse = client.disburse_create(
-            phone=transfer.to_phone,
-            amount=int(transfer.amount_sent),        # CORRIGÉ ICI
-            mode=transfer.to_wallet,
-            callback_url=callback_url,
-            disburse_id=f"MB{transfer.id}"
-        )
+        # disburse = client.disburse_create(
+        #     phone=transfer.to_phone,
+        #     amount=int(transfer.amount_sent),        # CORRIGÉ ICI
+        #     mode=transfer.to_wallet,
+        #     callback_url=callback_url,
+        #     disburse_id=f"MB{transfer.id}"
+        # )
+        
+        try:
+            disburse = client.disburse_create(
+                        phone=transfer.to_phone,
+                        amount=int(transfer.amount_sent),        # CORRIGÉ ICI
+                        mode=transfer.to_wallet,
+                        callback_url=callback_url,
+                        disburse_id=f"MB{transfer.id}"
+                    )            
+        except requests.exceptions.Timeout:
+            return Response({"error": "PayDunya ne répond pas (timeout)"}, status=504)
+        except Exception as e:
+            return Response({"error": "Erreur PayDunya", "details": str(e)}, status=500)
 
         if disburse.get('response_code') != '00':
             return Response({
