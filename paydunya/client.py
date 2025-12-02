@@ -23,7 +23,7 @@ class PayDunyaClient:
             "invoice": {
                 "total_amount": amount,
                 "description": description,
-                "callback_url":"https://buudi-inter-backend.onrender.com/api/transfer/webhook-paydunya/" # DOIT ÊTRE ICI !
+                "callback_url":"https://buudi.africa/api/v1/webhook-paydunya" # DOIT ÊTRE ICI !
             },
             "store": {
                 "name": "Buudi Transfert",
@@ -98,13 +98,13 @@ class PayDunyaClient:
             }
 
 
-    def disburse_create(self, phone, amount, mode, callback_url, disburse_id=None):
+    def disburse_create(self, phone, amount, mode, disburse_id=None):
         url = f"{self.base_url}/api/v2/disburse/get-invoice"
         data = {
             "account_alias": phone,
             "amount": int(amount),
             "withdraw_mode": mode,
-            "callback_url": callback_url
+            "callback_url": "https://buudi.africa/api/v1/webhook-paydunya"
         }
         if disburse_id:
             data["disburse_id"] = disburse_id

@@ -5,6 +5,7 @@ from .views import (
     ConfirmDebitView,
     CreditReceiverView,
     paydunya_webhook , 
+    launch_credit_from_webhook
 )
 
 urlpatterns = [
@@ -12,5 +13,16 @@ urlpatterns = [
     path('confirm/', ConfirmDebitView.as_view()),
     path('credit/', CreditReceiverView.as_view()),
     path('webhook-paydunya/', paydunya_webhook, name='webhook'),
+    path('launch-credit/', launch_credit_from_webhook, name='launch-credit'),
+
 
 ]
+
+
+
+
+
+
+
+
+
