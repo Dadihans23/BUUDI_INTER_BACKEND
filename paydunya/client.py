@@ -23,7 +23,7 @@ class PayDunyaClient:
             "invoice": {
                 "total_amount": amount,
                 "description": description,
-                "callback_url": callback_url # DOIT ÊTRE ICI !
+                "callback_url":"https://buudi-inter-backend.onrender.com/api/transfer/webhook-paydunya/" # DOIT ÊTRE ICI !
             },
             "store": {
                 "name": "Buudi Transfert",
@@ -108,14 +108,14 @@ class PayDunyaClient:
         }
         if disburse_id:
             data["disburse_id"] = disburse_id
-        return requests.post(url, json=data, headers=self.headers).json()
+        return requests.post(url, json=data, headers=self.headers , timeout=20).json()
 
     def disburse_submit(self, token, disburse_id=None):
         url = f"{self.base_url}/api/v2/disburse/submit-invoice"
         data = {"disburse_invoice": token}
         if disburse_id:
             data["disburse_id"] = disburse_id
-        return requests.post(url, json=data, headers=self.headers).json()
+        return requests.post(url, json=data, headers=self.headers , timeout=20).json()
 
     def check_status(self, token):
         url = f"{self.base_url}/api/v2/disburse/check-status"
