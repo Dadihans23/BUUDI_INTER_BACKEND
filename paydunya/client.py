@@ -23,7 +23,9 @@ class PayDunyaClient:
             "invoice": {
                 "total_amount": amount,
                 "description": description,
-                "callback_url":"https://buudi.africa/api/v1/webhook-paydunya" # DOIT ÊTRE ICI !
+                "callback_url":"https://buudi.africa/api/v1/webhook-paydunya", 
+                "return_url": "https://buudi.africa/api/v1/webhook-paydunya",          
+                "cancel_url": "https://buudi.africa/api/v1/webhook-paydunya"
             },
             "store": {
                 "name": "Buudi Transfert",
@@ -31,8 +33,6 @@ class PayDunyaClient:
             }
         }
         return requests.post(url, json=data, headers=self.headers).json()
-    
-    
     
     
 
@@ -98,7 +98,7 @@ class PayDunyaClient:
             }
 
 
-    def disburse_create(self, phone, amount, mode, disburse_id=None):
+    def disburse_create(self, phone, amount, callback_url,  mode, disburse_id=None):
         url = f"{self.base_url}/api/v2/disburse/get-invoice"
         data = {
             "account_alias": phone,
