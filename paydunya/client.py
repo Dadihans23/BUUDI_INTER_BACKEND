@@ -123,6 +123,16 @@ class PayDunyaClient:
     
     
     
+    def check_invoice_status(self, invoice_token):
+        """Vérifie activement si la facture a été payée (surtout pour Wave)"""
+        url = f"{self.base_url}/api/v1/checkout-invoice/confirm/{invoice_token}"
+        try:
+            response = requests.get(url, headers=self.headers, timeout=15)
+            return response.json()
+        except:
+            return {"status": "unknown"}
+    
+    
     
     
     
