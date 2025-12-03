@@ -156,22 +156,71 @@ class ConfirmDebitView(APIView):
         })
 
 
-# ENDPOINT INTERNE (appelé par ton webhook PHP)
+
+
 @csrf_exempt
-def launch_credit_from_webhook(request):
+def _launch_credit(transfer):
+    if transfer.status not in ['debited', 'pending_wave']:
+        return
+
+    client = PayDunyaClient()
+    try:
+        disburse = client.disburse_create(
+            phone=transfer.to_phone,
+            amount=int(transfer.amount_sent),
+            mode=transfer.to_wallet,
+            callback_url="https://buudi.africa/api/v1/webhook-paydunya",  # DYNAMIQUE
+            disburse_id=f"MB{transfer.id}"
+        )
+
+        if disburse.get('response_code') == '00':
+            submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
+            if submit.get('response_code') == '00':
+                transfer.disburse_token = disburse['disburse_token']
+                transfer.disburse_id = f"MB{transfer.id}"
+                transfer.status = 'disbursing'
+                transfer.save()
+                logger.info(f"CRÉDIT AUTOMATIQUE LANCÉ → MB{transfer.id}")
+                return
+
+        transfer.status = 'failed'
+        transfer.save()
+        logger.error(f"ÉCHEC CRÉDIT → {disburse} | {submit}")
+    except Exception as e:
+        transfer.status = 'failed'
+        transfer.save()
+        logger.error(f"ERREUR FATALE CRÉDIT → {e}", exc_info=True)
+
+
+
+# NOUVEL ENDPOINT → appelé par PHP quand le déboursement est terminé
+@csrf_exempt
+def update_transfer_status(request):
     if request.method != 'POST':
         return JsonResponse({"error": "POST only"}, status=405)
 
-    token = request.POST.get('invoice_token') or (json.loads(request.body).get('invoice_token') if request.body else None)
-    if not token:
-        return JsonResponse({"error": "invoice_token requis"}, status=400)
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({"error": "JSON invalide"}, status=400)
+    
+    logger.info(f"WEBHOOK PAYDUNYA CONTACTE")
+
+
+    disburse_id = data.get('disburse_id')
+    status = data.get('status')  # 'success' ou 'failed'
+
+    if not disburse_id or status not in ['success', 'failed']:
+        return JsonResponse({"error": "Données manquantes"}, status=400)
 
     try:
-        transfer = Transfer.objects.get(paydunya_invoice_token=token, status='pending_wave')
-        Thread(target=_launch_credit, args=(transfer,)).start()
-        return JsonResponse({"status": "ok", "message": "Crédit lancé"})
+        transfer = Transfer.objects.get(disburse_id=disburse_id)
+        transfer.status = status
+        transfer.save()
+        logger.info(f"STATUT FINAL MIS À JOUR → MB{transfer.id} = {status.upper()}")
+        return JsonResponse({"status": "ok", "message": f"Transfert {transfer.id} → {status}"})
     except Transfer.DoesNotExist:
-        return JsonResponse({"status": "ok", "message": "Déjà traité ou invalide"})
+        return JsonResponse({"status": "ok", "message": "Transfert introuvable (déjà traité ?)"})
 
 
 # WEBHOOK PRINCIPAL PAYDUNYA (peut rester, mais plus léger)
@@ -254,54 +303,54 @@ def _launch_credit(transfer):
         
         
 # transfers/views.py
-class CreditReceiverView(APIView):
-    def post(self, request):
-        transfer_id = request.data.get('transfer_id')
-        try:
-            transfer = Transfer.objects.get(id=transfer_id)
-        except Transfer.DoesNotExist:
-            return Response({"error": "Transfert non débité"}, status=404)
+# class CreditReceiverView(APIView):
+#     def post(self, request):
+#         transfer_id = request.data.get('transfer_id')
+#         try:
+#             transfer = Transfer.objects.get(id=transfer_id)
+#         except Transfer.DoesNotExist:
+#             return Response({"error": "Transfert non débité"}, status=404)
 
-        client = PayDunyaClient()
+#         client = PayDunyaClient()
 
-        # URL webhook en prod (ngrok ou domaine)
-        callback_url = "https://buudi.africa/api/v1/webhook-paydunya"
-        try:
-            disburse = client.disburse_create(
-                        phone=transfer.to_phone,
-                        amount=int(transfer.amount_sent),        # CORRIGÉ ICI
-                        mode=transfer.to_wallet,
-                        callback_url=callback_url,
-                        disburse_id=f"MB{transfer.id}"
-                    )            
-        except requests.exceptions.Timeout:
-            return Response({"error": "PayDunya ne répond pas (timeout)"}, status=504)
-        except Exception as e:
-            return Response({"error": "Erreur PayDunya", "details": str(e)}, status=500)
+#         # URL webhook en prod (ngrok ou domaine)
+#         callback_url = "https://buudi.africa/api/v1/webhook-paydunya"
+#         try:
+#             disburse = client.disburse_create(
+#                         phone=transfer.to_phone,
+#                         amount=int(transfer.amount_sent),        # CORRIGÉ ICI
+#                         mode=transfer.to_wallet,
+#                         callback_url=callback_url,
+#                         disburse_id=f"MB{transfer.id}"
+#                     )            
+#         except requests.exceptions.Timeout:
+#             return Response({"error": "PayDunya ne répond pas (timeout)"}, status=504)
+#         except Exception as e:
+#             return Response({"error": "Erreur PayDunya", "details": str(e)}, status=500)
 
-        if disburse.get('response_code') != '00':
-            return Response({
-                "error": "Échec création déboursement",
-                "details": disburse
-            }, status=500)
+#         if disburse.get('response_code') != '00':
+#             return Response({
+#                 "error": "Échec création déboursement",
+#                 "details": disburse
+#             }, status=500)
 
-        submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
+#         submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
 
-        if submit.get('response_code') == '00':
-            status = submit.get('status', 'pending')
-            transfer.disburse_token = disburse['disburse_token']
-            transfer.disburse_id = f"MB{transfer.id}"
-            transfer.status = 'disbursing' if status == 'pending' else 'success'
-            transfer.save()
-            return Response({
-                "message": "Crédit lancé",
-                "status": transfer.status,
-                "disburse_id": f"MB{transfer.id}"
-            })
+#         if submit.get('response_code') == '00':
+#             status = submit.get('status', 'pending')
+#             transfer.disburse_token = disburse['disburse_token']
+#             transfer.disburse_id = f"MB{transfer.id}"
+#             transfer.status = 'disbursing' if status == 'pending' else 'success'
+#             transfer.save()
+#             return Response({
+#                 "message": "Crédit lancé",
+#                 "status": transfer.status,
+#                 "disburse_id": f"MB{transfer.id}"
+#             })
 
-        transfer.status = 'failed'
-        transfer.save()
-        return Response({"error": "Échec soumission", "details": submit}, status=500)
+#         transfer.status = 'failed'
+#         transfer.save()
+#         return Response({"error": "Échec soumission", "details": submit}, status=500)
     
     
 
