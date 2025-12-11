@@ -45,7 +45,11 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     # AJOUTE TON URL NGROK ICI
-    'buudi-inter-backend.onrender.com'
+    'buudi-inter-backend.onrender.com',
+    '10.244.164.222',
+    '172.20.10.2'
+    
+    
 ]
 
 

@@ -13,6 +13,8 @@ from django.conf import settings
 from threading import Thread
 import requests
 
+
+
 logger = logging.getLogger('buudi')
 if not logger.handlers:
     handler = logging.StreamHandler()
@@ -31,13 +33,25 @@ WALLET_MAP = {
 
 class InitiateTransferView(APIView):
     def post(self, request):
+    
         phone = request.headers.get('X-User-Phone')
-        logger.info(f"INIT TRANSFERT → {phone}")
+        name = request.headers.get('X-User-Name', None)
 
-        try:
-            user = UserProfile.objects.get(phone=phone)
-        except UserProfile.DoesNotExist:
-            return Response({"error": "Utilisateur inconnu"}, status=404)
+        logger.info(f"INIT TRANSFERT → {phone} | Nom reçu : {name}")
+
+        if not phone:
+            return Response({"error": "Numéro manquant"}, status=400)
+
+        # Création automatique si nécessaire
+        user, created = UserProfile.objects.get_or_create(
+            phone=phone,
+            defaults={"name": name or f"User_{phone}"}
+        )
+
+        if created:
+            logger.info(f"Nouvel utilisateur créé : {user.phone} ({user.name})")
+        else:
+            logger.info(f"Utilisateur existant : {user.phone} ({user.name})")
 
         data = request.data
         amount = Decimal(data.get('amount', 0))
@@ -129,6 +143,10 @@ class ConfirmDebitView(APIView):
         )
 
         if not response.get('success'):
+            print("❌ Paiement échoué — détails :")
+            print(json.dumps(response, indent=4, ensure_ascii=False))
+            transfer.status = 'failed'
+            transfer.save()
             return Response({"error": "Paiement échoué", "details": response}, status=400)
 
         # Wave → on attend le webhook
@@ -297,12 +315,54 @@ def _poll_wave_payment(transfer):
         
         
         
+
+
+
+
+# transfers/views.py
+class TransferStatusView(APIView):
+    def get(self, request, transfer_id):
+        try:
+            transfer = Transfer.objects.get(id=transfer_id)
+            
+            is_final = transfer.status in ['success', 'failed']
+            
+            return Response({
+                "status": transfer.status,
+                "message": "Transfert terminé" if is_final else "En cours...",
+                "final": is_final  # ← booléen propre en minuscule
+            })
+            
+        except Transfer.DoesNotExist:
+            return Response({"error": "Transfert non trouvé"}, status=404)      
         
         
         
         
+
+
+class FeesConfigView(APIView):
+    def get(self, request):
+        fees = OperatorFees.objects.all().values(
+            'operator',
+            'payin_fee_percent',
+            'payout_fee_percent'
+        )
         
+        # On transforme en dict facile à utiliser côté Flutter
+        config = {
+            "buudi_commission_percent": 1.5,  # Tu peux le mettre dans un modèle aussi
+            "operators": {}
+        }
         
+        for fee in fees:
+            op = fee['operator']
+            config["operators"][op] = {
+                "payin_percent": float(fee['payin_fee_percent']),
+                "payout_percent": float(fee['payout_fee_percent'])
+            }
+        
+        return Response(config)       
         
         
         
