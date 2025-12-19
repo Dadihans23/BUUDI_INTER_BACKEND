@@ -1,0 +1,269 @@
+{% extends 'custom_admin/base_common.html' %}
+{% load static %}
+
+{% block title %}Transferts - Transfert Admin{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Dashboard -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-view-dashboard"></i><span>Dashboard</span>
+    </a>
+</li>
+
+<!-- Utilisateurs -->
+<li class="accordion-menu-item has-submenu">
+    <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
+        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
+        <li><a href="{% url 'custom_admin:users' %}" class="{% if request.resolver_match.url_name == 'users' %}active{% endif %}">Liste des utilisateurs</a></li>
+        <li><a href="{% url 'custom_admin:user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Ajouter un utilisateur</a></li>
+    </ul>
+</li>
+
+<!-- Transferts → ACTIF -->
+<li class="accordion-menu-item has-submenu opened">
+    <a href="#" class="accordion-toggle opened">
+        <i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" style="display: block;">
+        <li><a href="{% url 'custom_admin:transfers' %}" class="active">Tous les transferts</a></li>
+    </ul>
+</li>
+
+<!-- Frais Opérateurs -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:fees' %}" class="{% if request.resolver_match.url_name == 'fees' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
+    </a>
+</li>
+
+<!-- Paramètres -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:settings' %}" class="{% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
+    </a>
+</li>
+
+<!-- Admin Django -->
+<li class="accordion-menu-item">
+    <a href="{% url 'admin:index' %}">
+        <i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span>
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">🔄 Tous les Transferts</h2>
+                        <p class="text-muted mb-0">Gestion complète des transferts d'argent entre opérateurs</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="location.reload()">
+                            <i class="mdi mdi-refresh"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres & Recherche -->
+    <div class="card border mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Recherche</label>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Téléphone ou nom" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Statut</label>
+                    <select name="status" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="created" {% if status_filter == 'created' %}selected{% endif %}>Créé</option>
+                        <option value="invoice_sent" {% if status_filter == 'invoice_sent' %}selected{% endif %}>Facture envoyée</option>
+                        <option value="debited" {% if status_filter == 'debited' %}selected{% endif %}>Débité</option>
+                        <option value="disbursing" {% if status_filter == 'disbursing' %}selected{% endif %}>En crédit</option>
+                        <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Réussi</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Échoué</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Opérateur</label>
+                    <select name="operator" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="orange" {% if operator_filter == 'orange' %}selected{% endif %}>Orange Money</option>
+                        <option value="moov" {% if operator_filter == 'moov' %}selected{% endif %}>Moov</option>
+                        <option value="mtn" {% if operator_filter == 'mtn' %}selected{% endif %}>MTN</option>
+                        <option value="wave" {% if operator_filter == 'wave' %}selected{% endif %}>Wave</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Du</label>
+                    <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Au</label>
+                    <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="mdi mdi-magnify"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="mt-2">
+                <a href="{% url 'custom_admin:transfers' %}" class="text-muted small">
+                    <i class="mdi mdi-close"></i> Réinitialiser les filtres
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des Transferts -->
+    <div class="card border">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Utilisateur</th>
+                            <th>Référence</th>
+                            <th>De → Vers</th>
+                            <th>Montant</th>
+                            <th>Frais (Nous)</th>
+                            <th>Frais Paydunia</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transfer in page_obj %}
+                        <tr>
+                            <td><strong>#{{ transfer.id }}</strong></td>
+                            <td>
+                                <div>
+                                    <strong>{{ transfer.user.name }}</strong><br>
+                                    <small class="text-muted">{{ transfer.user.phone }}</small>
+                                </div>
+                            </td>
+                            <td><strong>#{{ transfer.paydunya_invoice_token }}</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ transfer.from_wallet|upper }}</span>
+                                <i class="mdi mdi-arrow-right mx-1"></i>
+                                <span class="badge bg-success">{{ transfer.to_wallet|upper }}</span>
+                                <br>
+                                <small>{{ transfer.from_phone }} → {{ transfer.to_phone }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ transfer.amount_requested|floatformat:0 }} FCFA</strong>
+                            </td>
+                            <td class="text-success">
+                                +{{ transfer.our_fee_amount|floatformat:0 }} FCFA
+                            </td>
+                            <td class="text-warning">
+                                -{{ transfer.payin_fee_amount|add:transfer.payout_fee_amount|floatformat:0 }} FCFA
+                            </td>
+                            <td>
+                                {% if transfer.status == 'success' %}
+                                    <span class="badge bg-success">Réussi</span>
+                                {% elif transfer.status == 'failed' %}
+                                    <span class="badge bg-danger">Échoué</span>
+                                {% elif transfer.status == 'disbursing' %}
+                                    <span class="badge bg-info">En crédit</span>
+                                {% elif transfer.status == 'debited' %}
+                                    <span class="badge bg-primary">Débité</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ transfer.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ transfer.created_at|date:"d/m/Y" }}<br>
+                                <small class="text-muted">{{ transfer.created_at|date:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'custom_admin:transfer_detail' transfer.id %}" class="btn btn-outline-primary btn-sm" title="Détail">
+                                        <i class="mdi mdi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <i class="mdi mdi-swap-horizontal text-muted" style="font-size: 4rem;"></i>
+                                <h5 class="text-muted mt-3">Aucun transfert trouvé</h5>
+                                <p class="text-muted">Modifiez les filtres ou attendez de nouveaux transferts.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">
+                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }}
+                            sur {{ page_obj.paginator.count }} transferts
+                        </small>
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode|slice:":-&page=" }}{% endif %}&page={{ page_obj.previous_page_number }}">Précédent</a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode|slice:":-&page=" }}{% endif %}&page={{ num }}">{{ num }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode|slice:":-&page=" }}{% endif %}&page={{ page_obj.next_page_number }}">Suivant</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
+    }).showToast();
+}
+</script>
+{% endblock %}

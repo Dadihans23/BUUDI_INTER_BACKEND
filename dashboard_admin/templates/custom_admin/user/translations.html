@@ -1,0 +1,1814 @@
+
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Mes Traductions - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Mes Traductions</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Traductions</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success" onclick="showTranslationTool()">
+                            <i class="mdi mdi-translate"></i> Nouvelle traduction
+                        </button>
+                        {% comment %} <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a> {% endcomment %}
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </button>
+                        <a href= "{% url 'front:pack' %}" class="btn btn-primary">
+                            <i class="mdi mdi-magnify"></i> Souscrire a un pack
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ stats.total_translations }}</h4>
+                    <p class="text-muted mb-0">Total traductions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">{{ stats.total_tokens }}</h4>
+                    <p class="text-muted mb-0">Tokens utilisés</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">{{ stats.unique_languages }}</h4>
+                    <p class="text-muted mb-0">Langues supportées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outil de traduction -->
+    <div class="row" id="translation-tool" style="display: none;">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="header-title">
+                            <i class="mdi mdi-translate text-primary me-2"></i>
+                            Outil de Traduction
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideTranslationTool()">
+                            <i class="mdi mdi-close"></i> Fermer
+                        </button>
+                    </div>
+
+                    <form id="translationForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Langue source</label>
+                                            <select class="form-control" id="sourceLang">
+                                                <option value="auto">Auto-détection</option>
+                                                <option value="af">Afrikaans</option>
+                                                <option value="am">Amharique (አማርኛ) (Afrique)</option>
+                                                <option value="ar">Arabe (العربية)</option>
+                                                <option value="az">Azerbaïdjanais</option>
+                                                <option value="bam">Bambara (Bamanankan) (Afrique)</option>
+                                                <option value="ba">Bachkir</option>
+                                                <option value="eu">Basque</option>
+                                                <option value="be">Biélorusse</option>
+                                                <option value="bn">Bengali (বাংলা)</option>
+                                                <option value="bho">Bhojpuri</option>
+                                                <option value="bs">Bosniaque</option>
+                                                <option value="bg">Bulgare</option>
+                                                <option value="ca">Catalan</option>
+                                                <option value="ceb">Cebuano</option>
+                                                <option value="cs">Tchèque</option>
+                                                <option value="da">Danois</option>
+                                                <option value="de">Allemand</option>
+                                                <option value="din">Dinka (Thuɔŋjäŋ) (Afrique)</option>
+                                                <option value="doi">Dogri</option>
+                                                <option value="dv">Divehi</option>
+                                                <option value="en">Anglais</option>
+                                                <option value="es">Espagnol</option>
+                                                <option value="et">Estonien</option>
+                                                <option value="ee">Ewe (Eʋegbe) (Afrique)</option>
+                                                <option value="fi">Finnois</option>
+                                                <option value="fon">Fon (Fɔngbe) (Afrique)</option>
+                                                <option value="fr">Français</option>
+                                                <option value="gl">Galicien</option>
+                                                <option value="gu">Gujarati (ગુજરાતી)</option>
+                                                <option value="ha">Hausa (هَوُسَ) (Afrique)</option>
+                                                <option value="he">Hébreu (עברית)</option>
+                                                <option value="hi">Hindi (हिन्दी)</option>
+                                                <option value="hr">Croate</option>
+                                                <option value="hu">Hongrois</option>
+                                                <option value="hy">Arménien (Հայերեն)</option>
+                                                <option value="id">Indonésien</option>
+                                                <option value="ig">Igbo (Asụsụ Igbo) (Afrique)</option>
+                                                <option value="ilo">Ilocano</option>
+                                                <option value="is">Islandais</option>
+                                                <option value="it">Italien</option>
+                                                <option value="ja">Japonais (日本語)</option>
+                                                <option value="jv">Javanais</option>
+                                                <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                                <option value="kk">Kazakh</option>
+                                                <option value="km">Khmer (ភាសាខ្មែរ)</option>
+                                                <option value="rw">Kinyarwanda (Ikinyarwanda) (Afrique)</option>
+                                                <option value="ky">Kirghize</option>
+                                                <option value="ko">Coréen (한국어)</option>
+                                                <option value="ku">Kurde</option>
+                                                <option value="lg">Luganda (Oluganda) (Afrique)</option>
+                                                <option value="ln">Lingala (Lingála) (Afrique)</option>
+                                                <option value="lo">Lao (ພາສາລາວ)</option>
+                                                <option value="lt">Lituanien</option>
+                                                <option value="luo">Luo (Dholuo) (Afrique)</option>
+                                                <option value="lb">Luxembourgeois</option>
+                                                <option value="mk">Macédonien</option>
+                                                <option value="mg">Malgache (Malagasy) (Afrique)</option>
+                                                <option value="ms">Malais</option>
+                                                <option value="ml">Malayalam (മലയാളം)</option>
+                                                <option value="mt">Maltais</option>
+                                                <option value="mr">Marathi (मराठी)</option>
+                                                <option value="my">Birman (ဗမာစာ)</option>
+                                                <option value="ne">Népalais (नेपाली)</option>
+                                                <option value="nl">Néerlandais</option>
+                                                <option value="no">Norvégien</option>
+                                                <option value="nus">Nuer (Naath) (Afrique)</option>
+                                                <option value="ny">Chichewa (Chinyanja) (Afrique)</option>
+                                                <option value="or">Odia</option>
+                                                <option value="om">Oromo (Afaan Oromoo) (Afrique)</option>
+                                                <option value="pa">Pendjabi (ਪੰਜਾਬੀ)</option>
+                                                <option value="fa">Persan (فارسی)</option>
+                                                <option value="pl">Polonais</option>
+                                                <option value="pt">Portugais</option>
+                                                <option value="pt-BR">Portugais (Brésil)</option>
+                                                <option value="ro">Roumain</option>
+                                                <option value="ru">Russe (Русский)</option>
+                                                <option value="sm">Samoan</option>
+                                                <option value="sa">Sanskrit</option>
+                                                <option value="sd">Sindhi</option>
+                                                <option value="si">Sinhala (සිංහල)</option>
+                                                <option value="sk">Slovaque</option>
+                                                <option value="sl">Slovène</option>
+                                                <option value="so">Somali (Af Soomaali) (Afrique)</option>
+                                                <option value="sq">Albanais</option>
+                                                <option value="sr">Serbe</option>
+                                                <option value="su">Soudanais</option>
+                                                <option value="sw">Swahili (Kiswahili) (Afrique)</option>
+                                                <option value="sv">Suédois</option>
+                                                <option value="ta">Tamoul (தமிழ்)</option>
+                                                <option value="te">Télougou (తెలుగు)</option>
+                                                <option value="th">Thaï (ภาษาไทย)</option>
+                                                <option value="ti">Tigrinya (ትግርኛ) (Afrique)</option>
+                                                <option value="tr">Turc</option>
+                                                <option value="uk">Ukrainien (Українська)</option>
+                                                <option value="ur">Ourdou (اردو)</option>
+                                                <option value="uz">Ouzbek</option>
+                                                <option value="vi">Vietnamien (Tiếng Việt)</option>
+                                                <option value="wo">Wolof (Afrique)</option>
+                                                <option value="xh">Xhosa (isiXhosa) (Afrique)</option>
+                                                <option value="yi">Yiddish (ייִדיש)</option>
+                                                <option value="yo">Yoruba (Èdè Yorùbá) (Afrique)</option>
+                                                <option value="zh-CN">Chinois (simplifié, 中国)</option>
+                                                <option value="zh-TW">Chinois (traditionnel, 台灣)</option>
+                                                <option value="zu">Zoulou (isiZulu) (Afrique)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Langue cible</label>
+                                            <select class="form-control" id="targetLang" required>
+                                                <option value="">Sélectionner...</option>
+                                                <option value="af">Afrikaans</option>
+                                                <option value="am">Amharique (አማርኛ) (Afrique)</option>
+                                                <option value="ar">Arabe (العربية)</option>
+                                                <option value="az">Azerbaïdjanais</option>
+                                                <option value="bm">Bambara (Bamanankan) (Afrique)</option>
+                                                <option value="ba">Bachkir</option>
+                                                <option value="eu">Basque</option>
+                                                <option value="be">Biélorusse</option>
+                                                <option value="bn">Bengali (বাংলা)</option>
+                                                <option value="bho">Bhojpuri</option>
+                                                <option value="bs">Bosniaque</option>
+                                                <option value="bg">Bulgare</option>
+                                                <option value="ca">Catalan</option>
+                                                <option value="ceb">Cebuano</option>
+                                                <option value="cs">Tchèque</option>
+                                                <option value="da">Danois</option>
+                                                <option value="de">Allemand</option>
+                                                <option value="din">Dinka (Thuɔŋjäŋ) (Afrique)</option>
+                                                <option value="doi">Dogri</option>
+                                                <option value="dv">Divehi</option>
+                                                <option value="en">Anglais</option>
+                                                <option value="es">Espagnol</option>
+                                                <option value="et">Estonien</option>
+                                                <option value="ee">Ewe (Eʋegbe) (Afrique)</option>
+                                                <option value="fi">Finnois</option>
+                                                <option value="fon">Fon (Fɔngbe) (Afrique)</option>
+                                                <option value="fr">Français</option>
+                                                <option value="gl">Galicien</option>
+                                                <option value="gu">Gujarati (ગુજરાતી)</option>
+                                                <option value="ha">Hausa (هَوُسَ) (Afrique)</option>
+                                                <option value="he">Hébreu (עברית)</option>
+                                                <option value="hi">Hindi (हिन्दी)</option>
+                                                <option value="hr">Croate</option>
+                                                <option value="hu">Hongrois</option>
+                                                <option value="hy">Arménien (Հայերեն)</option>
+                                                <option value="id">Indonésien</option>
+                                                <option value="ig">Igbo (Asụsụ Igbo) (Afrique)</option>
+                                                <option value="ilo">Ilocano</option>
+                                                <option value="is">Islandais</option>
+                                                <option value="it">Italien</option>
+                                                <option value="ja">Japonais (日本語)</option>
+                                                <option value="jv">Javanais</option>
+                                                <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                                <option value="kk">Kazakh</option>
+                                                <option value="km">Khmer (ភាសាខ្មែរ)</option>
+                                                <option value="rw">Kinyarwanda (Ikinyarwanda) (Afrique)</option>
+                                                <option value="ky">Kirghize</option>
+                                                <option value="ko">Coréen (한국어)</option>
+                                                <option value="ku">Kurde</option>
+                                                <option value="lg">Luganda (Oluganda) (Afrique)</option>
+                                                <option value="ln">Lingala (Lingála) (Afrique)</option>
+                                                <option value="lo">Lao (ພາສາລາວ)</option>
+                                                <option value="lt">Lituanien</option>
+                                                <option value="luo">Luo (Dholuo) (Afrique)</option>
+                                                <option value="lb">Luxembourgeois</option>
+                                                <option value="mk">Macédonien</option>
+                                                <option value="mg">Malgache (Malagasy) (Afrique)</option>
+                                                <option value="ms">Malais</option>
+                                                <option value="ml">Malayalam (മലയാളം)</option>
+                                                <option value="mt">Maltais</option>
+                                                <option value="mr">Marathi (मराठी)</option>
+                                                <option value="my">Birman (ဗမာစာ)</option>
+                                                <option value="ne">Népalais (नेपाली)</option>
+                                                <option value="nl">Néerlandais</option>
+                                                <option value="no">Norvégien</option>
+                                                <option value="nus">Nuer (Naath) (Afrique)</option>
+                                                <option value="ny">Chichewa (Chinyanja) (Afrique)</option>
+                                                <option value="or">Odia</option>
+                                                <option value="om">Oromo (Afaan Oromoo) (Afrique)</option>
+                                                <option value="pa">Pendjabi (ਪੰਜਾਬੀ)</option>
+                                                <option value="fa">Persan (فارسی)</option>
+                                                <option value="pl">Polonais</option>
+                                                <option value="pt">Portugais</option>
+                                                <option value="pt-BR">Portugais (Brésil)</option>
+                                                <option value="ro">Roumain</option>
+                                                <option value="ru">Russe (Русский)</option>
+                                                <option value="sm">Samoan</option>
+                                                <option value="sa">Sanskrit</option>
+                                                <option value="sd">Sindhi</option>
+                                                <option value="si">Sinhala (සිංහල)</option>
+                                                <option value="sk">Slovaque</option>
+                                                <option value="sl">Slovène</option>
+                                                <option value="so">Somali (Af Soomaali) (Afrique)</option>
+                                                <option value="sq">Albanais</option>
+                                                <option value="sr">Serbe</option>
+                                                <option value="su">Soudanais</option>
+                                                <option value="sw">Swahili (Kiswahili) (Afrique)</option>
+                                                <option value="sv">Suédois</option>
+                                                <option value="ta">Tamoul (தமிழ்)</option>
+                                                <option value="te">Télougou (తెలుగు)</option>
+                                                <option value="th">Thaï (ภาษาไทย)</option>
+                                                <option value="ti">Tigrinya (ትግርኛ) (Afrique)</option>
+                                                <option value="tr">Turc</option>
+                                                <option value="uk">Ukrainien (Українська)</option>
+                                                <option value="ur">Ourdou (اردو)</option>
+                                                <option value="uz">Ouzbek</option>
+                                                <option value="vi">Vietnamien (Tiếng Việt)</option>
+                                                <option value="wo">Wolof (Afrique)</option>
+                                                <option value="xh">Xhosa (isiXhosa) (Afrique)</option>
+                                                <option value="yi">Yiddish (ייִדיש)</option>
+                                                <option value="yo">Yoruba (Èdè Yorùbá) (Afrique)</option>
+                                                <option value="zh-CN">Chinois (simplifié, 中国)</option>
+                                                <option value="zh-TW">Chinois (traditionnel, 台灣)</option>
+                                                <option value="zu">Zoulou (isiZulu) (Afrique)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Texte à traduire</label>
+                                    <textarea class="form-control" id="sourceText" rows="6" 
+                                              placeholder="Saisissez ou collez votre texte ici..." required></textarea>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        
+                                        <small class="text-muted" id="detectedLanguage" style="display: none;">
+                                            Langue détectée: <span class="text-primary"></span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Traduction</label>
+                                    <textarea class="form-control" id="targetText" rows="6" 
+                                              placeholder="La traduction apparaîtra ici..." readonly></textarea>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <small class="text-muted">
+                                            <span id="targetCharCount">0</span> caractères
+                                        </small>
+                                        <small class="text-muted">
+                                            Confiance: <span id="confidenceScore" class="text-success">--</span>%
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button type="button" class="btn btn-outline-primary" onclick="translateText()">
+                                        <i class="mdi mdi-translate"></i> Traduire
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outil de détection de langue -->
+    <div class="row" id="language-detection" style="display: none;">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="header-title">
+                            <i class="mdi mdi-magnify text-info me-2"></i>
+                            Détection de Langue
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideLanguageDetection()">
+                            <i class="mdi mdi-close"></i> Fermer
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Texte à analyser</label>
+                                <textarea class="form-control" id="detectionText" rows="4" 
+                                          placeholder="Collez votre texte ici pour détecter automatiquement la langue..."></textarea>
+                                <small class="text-muted">
+                                    <span id="detectionCharCount">0</span> caractères
+                                </small>
+                            </div>
+                            
+                            <button type="button" class="btn btn-info" onclick="detectLanguage()">
+                                <i class="mdi mdi-magnify"></i> Détecter la langue
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Résultat de détection</h6>
+                                    <div id="detectionResults">
+                                        <p class="text-muted">Aucune analyse effectuée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Liste des traductions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Mes Traductions</h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                                <option value="">Tous les statuts</option>
+                                <option value="completed">Terminées</option>
+                                <option value="processing">En cours</option>
+                                <option value="draft">Brouillons</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row" id="translationsList">
+                        <!-- Les traductions seront chargées dynamiquement via AJAX -->
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="mt-4" id="translationPaginationSection">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="pagination-info">
+                                <small class="text-muted">
+                                    Affichage de <span id="translationCurrentStart">1</span> à <span id="translationCurrentEnd">0</span> 
+                                    sur <span id="translationTotalItems">0</span> traductions
+                                </small>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
+                                <div class="items-per-page">
+                                    <select class="form-select form-select-sm" id="translationItemsPerPage" style="width: auto;">
+                                        <option value="6" selected>6 par page</option>
+                                        <option value="12">12 par page</option>
+                                        <option value="18">18 par page</option>
+                                        <option value="24">24 par page</option>
+                                    </select>
+                                </div>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="translationPaginationControls">
+                                        <li class="page-item" id="translationPrevPage">
+                                            <a class="page-link" href="#" onclick="goToTranslationPage(translationCurrentPage - 1)">
+                                                <i class="mdi mdi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item" id="translationNextPage">
+                                            <a class="page-link" href="#" onclick="goToTranslationPage(translationCurrentPage + 1)">
+                                                <i class="mdi mdi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Visualisation Traduction -->
+<div class="modal fade" id="translationViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-file-document me-2"></i>
+                    <span id="translationTitle">Traduction Complète</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Texte source <span id="sourceLangDisplay" class="badge bg-secondary ms-2"></span></h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div id="fullSourceText" style="max-height: 400px; overflow-y: auto; line-height: 1.6;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Traduction <span id="targetLangDisplay" class="badge bg-primary ms-2"></span></h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div id="fullTargetText" style="max-height: 400px; overflow-y: auto; line-height: 1.6;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <small class="text-muted d-block">Tokens utilisés</small>
+                            <strong id="modalTokens">--</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <small class="text-muted d-block">Confiance</small>
+                            <strong id="modalConfidence" class="text-success">--</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <small class="text-muted d-block">Caractères source</small>
+                            <strong id="modalSourceChars">--</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <small class="text-muted d-block">Caractères cible</small>
+                            <strong id="modalTargetChars">--</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-outline-primary" onclick="copyModalTranslation()">
+                    <i class="mdi mdi-content-copy me-1"></i> Copier
+                </button>
+                <button class="btn btn-outline-success" onclick="downloadModalTranslation()">
+                    <i class="mdi mdi-download me-1"></i> Télécharger
+                </button>
+                <button class="btn btn-primary" onclick="editModalTranslation()">
+                    <i class="mdi mdi-pencil me-1"></i> Modifier
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+// Définition des noms de langues pour l'affichage côté client
+const LANGUAGE_NAMES = {
+    "af": "Afrikaans",
+    "am": "Amharique (አማርኛ) (Afrique)",
+    "ar": "Arabe (العربية)",
+    "az": "Azerbaïdjanais",
+    "bam": "Bambara (Bamanankan) (Afrique)",
+    "ba": "Bachkir",
+    "eu": "Basque",
+    "be": "Biélorusse",
+    "bn": "Bengali (বাংলা)",
+    "bho": "Bhojpuri",
+    "bs": "Bosniaque",
+    "bg": "Bulgare",
+    "ca": "Catalan",
+    "ceb": "Cebuano",
+    "cs": "Tchèque",
+    "da": "Danois",
+    "de": "Allemand",
+    "din": "Dinka (Thuɔŋjäŋ) (Afrique)",
+    "doi": "Dogri",
+    "dv": "Divehi",
+    "en": "Anglais",
+    "es": "Espagnol",
+    "et": "Estonien",
+    "ee": "Ewe (Eʋegbe) (Afrique)",
+    "fi": "Finnois",
+    "fon": "Fon (Fɔngbe) (Afrique)",
+    "fr": "Français",
+    "gl": "Galicien",
+    "gu": "Gujarati (ગુજરાતી)",
+    "ha": "Hausa (هَوُسَ) (Afrique)",
+    "he": "Hébreu (עברית)",
+    "hi": "Hindi (हिन्दी)",
+    "hr": "Croate",
+    "hu": "Hongrois",
+    "hy": "Arménien (Հայերեն)",
+    "id": "Indonésien",
+    "ig": "Igbo (Asụsụ Igbo) (Afrique)",
+    "ilo": "Ilocano",
+    "is": "Islandais",
+    "it": "Italien",
+    "ja": "Japonais (日本語)",
+    "jv": "Javanais",
+    "kn": "Kannada (ಕನ್ನಡ)",
+    "kk": "Kazakh",
+    "km": "Khmer (ភាសាខ្មែរ)",
+    "rw": "Kinyarwanda (Ikinyarwanda) (Afrique)",
+    "ky": "Kirghize",
+    "ko": "Coréen (한국어)",
+    "ku": "Kurde",
+    "lg": "Luganda (Oluganda) (Afrique)",
+    "ln": "Lingala (Lingála) (Afrique)",
+    "lo": "Lao (ພາສາລາວ)",
+    "lt": "Lituanien",
+    "luo": "Luo (Dholuo) (Afrique)",
+    "lb": "Luxembourgeois",
+    "mk": "Macédonien",
+    "mg": "Malgache (Malagasy) (Afrique)",
+    "ms": "Malais",
+    "ml": "Malayalam (മലയാളം)",
+    "mt": "Maltais",
+    "mr": "Marathi (मराठी)",
+    "my": "Birman (ဗမာစာ)",
+    "ne": "Népalais (नेपाली)",
+    "nl": "Néerlandais",
+    "no": "Norvégien",
+    "nus": "Nuer (Naath) (Afrique)",
+    "ny": "Chichewa (Chinyanja) (Afrique)",
+    "or": "Odia",
+    "om": "Oromo (Afaan Oromoo) (Afrique)",
+    "pa": "Pendjabi (ਪੰਜਾਬੀ)",
+    "fa": "Persan (فارسی)",
+    "pl": "Polonais",
+    "pt": "Portugais",
+    "pt-BR": "Portugais (Brésil)",
+    "ro": "Roumain",
+    "ru": "Russe (Русский)",
+    "sm": "Samoan",
+    "sa": "Sanskrit",
+    "sd": "Sindhi",
+    "si": "Sinhala (සිංහල)",
+    "sk": "Slovaque",
+    "sl": "Slovène",
+    "so": "Somali (Af Soomaali) (Afrique)",
+    "sq": "Albanais",
+    "sr": "Serbe",
+    "su": "Soudanais",
+    "sw": "Swahili (Kiswahili) (Afrique)",
+    "sv": "Suédois",
+    "ta": "Tamoul (தமிழ்)",
+    "te": "Télougou (తెలుగు)",
+    "th": "Thaï (ภาษาไทย)",
+    "ti": "Tigrinya (ትግርኛ) (Afrique)",
+    "tr": "Turc",
+    "uk": "Ukrainien (Українська)",
+    "ur": "Ourdou (اردو)",
+    "uz": "Ouzbek",
+    "vi": "Vietnamien (Tiếng Việt)",
+    "wo": "Wolof (Afrique)",
+    "xh": "Xhosa (isiXhosa) (Afrique)",
+    "yi": "Yiddish (ייִדיש)",
+    "yo": "Yoruba (Èdè Yorùbá) (Afrique)",
+    "zh-CN": "Chinois (simplifié, 中国)",
+    "zh-TW": "Chinois (traditionnel, 台灣)",
+    "zu": "Zoulou (isiZulu) (Afrique)"
+};
+
+// Translation pagination variables
+let translationCurrentPage = 1;
+let translationItemsPerPage = 6;
+let translationTotalItems = 0;
+let translationFilteredItems = [];
+
+$(document).ready(function() {
+    // Vérifier les dépendances
+    if (typeof $ === 'undefined') {
+        console.error("jQuery n'est pas chargé.");
+    }
+    if (typeof $.fn.modal === 'undefined') {
+        console.error("Bootstrap Modal n'est pas chargé.");
+    }
+    if (typeof Toastify === 'undefined') {
+        console.error("Toastify n'est pas chargé.");
+    } else {
+        Toastify({
+            text: "Page des traductions chargée !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }
+
+    // Charger les traductions initiales
+    loadTranslations();
+    
+    // Initialiser les compteurs de caractères
+    $('#sourceText, #detectionText').on('input', updateCharacterCounts);
+    
+    // Filtres de statut et langue
+    $('#statusFilter, #languageFilter').on('change', filterTranslations);
+    
+    // Changement du nombre d'éléments par page
+    $('#translationItemsPerPage').on('change', function() {
+        translationItemsPerPage = parseInt($(this).val());
+        translationCurrentPage = 1;
+        updateTranslationPagination();
+    });
+    
+    // Soumission du formulaire
+    $('#translationForm').on('submit', function(e) {
+        e.preventDefault();
+        saveTranslation();
+    });
+    
+    // Détection automatique de la langue
+    let detectTimeout;
+    $('#sourceText').on('input', function() {
+        clearTimeout(detectTimeout);
+        const text = $(this).val();
+        if (text.length > 20) {
+            detectTimeout = setTimeout(() => {
+                autoDetectLanguage(text);
+            }, 1000);
+        } else {
+            $('#detectedLanguage').hide();
+        }
+    });
+
+    // Empêcher la sélection de la même langue pour source et cible
+    $('#targetLang').on('change', function() {
+        const sourceLang = $('#sourceLang').val();
+        const targetLang = $(this).val();
+        if (sourceLang !== 'auto' && sourceLang === targetLang) {
+            Toastify({
+                text: "La langue cible doit être différente de la langue source.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+            $(this).val('');
+        }
+    });
+});
+
+function updateCharacterCounts() {
+    // Source text counter
+    const sourceText = $('#sourceText').val();
+    const sourceChars = sourceText.length;
+    const sourceTokens = Math.ceil(sourceChars / 4);
+    
+    $('#sourceCharCount').text(sourceChars.toLocaleString());
+    $('#sourceTokenEstimate').text(sourceTokens);
+    
+    // Detection text counter
+    const detectionText = $('#detectionText').val();
+    $('#detectionCharCount').text(detectionText.length.toLocaleString());
+    
+    // Target text counter
+    const targetText = $('#targetText').val();
+    $('#targetCharCount').text(targetText.length.toLocaleString());
+}
+
+function autoDetectLanguage(text) {
+    $.ajax({
+        url: '{% url "api:detect_language" %}',
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('api_token') || '{% if request.user.api_token %}{{ request.user.api_token }}{% endif %}'}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        data: JSON.stringify({
+            message: text
+        }),
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const detected = response.language || 'unknown';
+                const confidence = response.confidence || 0;
+                const langName = LANGUAGE_NAMES[detected] || 'Inconnu';
+                $('#detectedLanguage').show().find('span').text(`${langName} (${confidence}%)`);
+                $('#sourceLang').val(detected !== 'unknown' ? detected : 'auto');
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors de la détection de langue.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors de la détection.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function showTranslationTool() {
+    $('#translation-tool').slideDown();
+    $('#language-detection').slideUp();
+    $('html, body').animate({
+        scrollTop: $('#translation-tool').offset().top - 100
+    }, 500);
+    Toastify({
+        text: "Outil de traduction ouvert !",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function hideTranslationTool() {
+    $('#translation-tool').slideUp();
+    $('#sourceText, #targetText, #translationName').val('');
+    $('#sourceLang').val('auto');
+    $('#targetLang').val('');
+    $('#detectedLanguage').hide();
+    updateCharacterCounts();
+    Toastify({
+        text: "Outil de traduction fermé.",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function showLanguageDetection() {
+    $('#language-detection').slideDown();
+    $('#translation-tool').slideUp();
+    $('html, body').animate({
+        scrollTop: $('#language-detection').offset().top - 100
+    }, 500);
+    Toastify({
+        text: "Outil de détection ouvert !",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function hideLanguageDetection() {
+    $('#language-detection').slideUp();
+    $('#detectionText').val('');
+    $('#detectionResults').html('<p class="text-muted">Aucune analyse effectuée</p>');
+    updateCharacterCounts();
+    Toastify({
+        text: "Outil de détection fermé.",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function translateText() {
+    const sourceText = $('#sourceText').val().trim();
+    const sourceLang = $('#sourceLang').val();
+    const targetLang = $('#targetLang').val();
+    const apiToken ="{{user_token}}"  || '{% if request.user.api_token %}{{ request.user.api_token }}{% endif %}';
+
+    if (!apiToken || apiToken === '') {
+       
+        Toastify({
+        text: `Vous devez avoir un abonnement pour profiter de cette fonctionnalité`,
+        duration: 4000,
+        gravity: "top",
+        position: "right",
+        stopOnFocus: true,
+        style: {
+                background: "#dc3545",
+                borderRadius: "10px",
+                fontSize: "18px",
+                padding: "16px 24px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+            }
+        }).showToast();
+
+        setTimeout(() => {
+        window.location.href = "{% url 'front:pack' %}";
+        }, 5000);
+        return;
+    }
+
+
+
+
+    if (!sourceText) {
+        Toastify({
+            text: "Veuillez saisir du texte à traduire.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+        return;
+    }
+    
+    if (!targetLang) {
+        Toastify({
+            text: "Veuillez sélectionner une langue cible.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+        return;
+    }
+
+    $('#targetText').val('Traduction en cours...');
+
+    $.ajax({
+        url: '{% url "api:translate_text" %}',
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        data: JSON.stringify({
+            message: sourceText,
+            source_language: sourceLang,
+            target_language: targetLang
+        }),
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('#targetText').val(response.translated_text || 'Aucune traduction disponible');
+                $('#confidenceScore').text(response.confidence || 'N/A');
+                updateCharacterCounts();
+                
+                Toastify({
+                    text: `Traduction terminée ! Caractères restants : ${response.characters_remaining || 'N/A'}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors de la traduction.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors de la traduction.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function detectLanguage() {
+    const text = $('#detectionText').val().trim();
+    if (!text) {
+        Toastify({
+            text: "Veuillez saisir du texte à analyser.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+        return;
+    }
+    
+    Toastify({
+        text: "Analyse en cours...",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+    
+    $.ajax({
+        url: '{% url "api:detect_language" %}',
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('api_token') || '{% if request.user.api_token %}{{ request.user.api_token }}{% endif %}'}`,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        data: JSON.stringify({
+            message: text
+        }),
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const result = LANGUAGE_NAMES[response.language] || 'Aucune langue détectée';
+                const code = response.language || 'unknown';
+                const confidence = response.confidence || 0;
+                const html = `
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${result}</strong>
+                                <small class="text-muted d-block">${code.toUpperCase()}</small>
+                            </div>
+                            <span class="badge bg-primary">${confidence}%</span>
+                        </div>
+                    </div>
+                `;
+                $('#detectionResults').html(html);
+                Toastify({
+                    text: `Langue détectée : ${result}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors de la détection de langue.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors de la détection.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function saveTranslation() {
+    const formData = {
+        name: $('#translationName').val().trim(),
+        sourceText: $('#sourceText').val().trim(),
+        targetText: $('#targetText').val().trim(),
+        sourceLang: $('#sourceLang').val(),
+        targetLang: $('#targetLang').val()
+    };
+    
+    if (!formData.name || !formData.sourceText || !formData.targetText || !formData.targetLang) {
+        Toastify({
+            text: "Veuillez remplir tous les champs obligatoires.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+        return;
+    }
+    
+    Toastify({
+        text: "Sauvegarde en cours...",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+    
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'save_translation',
+            name: formData.name,
+            source_text: formData.sourceText,
+            target_text: formData.targetText,
+            source_lang: formData.sourceLang,
+            target_lang: formData.targetLang,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                loadTranslations();
+                hideTranslationTool();
+                Toastify({
+                    text: "Traduction sauvegardée avec succès !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors de la sauvegarde.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors de la sauvegarde.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function loadTranslations() {
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'get_translations',
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                translationFilteredItems = response.data;
+                translationTotalItems = translationFilteredItems.length;
+                renderTranslations();
+                updateTranslationPagination();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors du chargement des traductions.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors du chargement des traductions.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function renderTranslations() {
+    const $list = $('#translationsList');
+    $list.empty();
+    
+    if (translationFilteredItems.length === 0) {
+        $list.html(`
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="mdi mdi-translate-off text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Aucune traduction</h5>
+                    <p class="text-muted">Créez votre première traduction</p>
+                    <button class="btn btn-primary" onclick="showTranslationTool()">
+                        <i class="mdi mdi-plus me-2"></i>Nouvelle traduction
+                    </button>
+                </div>
+            </div>
+        `);
+        return;
+    }
+    
+    const startIndex = (translationCurrentPage - 1) * translationItemsPerPage;
+    const endIndex = Math.min(startIndex + translationItemsPerPage, translationTotalItems);
+    
+    for (let i = startIndex; i < endIndex; i++) {
+        const t = translationFilteredItems[i];
+        const statusBadge = t.status === 'completed' ? '<span class="badge bg-success">Terminée</span>' :
+                            t.status === 'processing' ? '<span class="badge bg-warning">En cours</span>' :
+                            '<span class="badge bg-secondary">Brouillon</span>';
+        const confidenceBadge = t.confidence ? `<span class="badge bg-info ms-1">${t.confidence}% confiance</span>` : '';
+        const targetText = t.target_text ? t.target_text.substring(0, 100) + (t.target_text.length > 100 ? '...' : '') : '<em class="text-muted">En attente de traduction...</em>';
+        const sourceLangName = LANGUAGE_NAMES[t.source_lang] || t.source_lang.toUpperCase();
+        const targetLangName = LANGUAGE_NAMES[t.target_lang] || t.target_lang.toUpperCase();
+        
+        $list.append(`
+            <div class="col-xl-6 col-lg-12 mb-4" data-status="${t.status}" data-languages="${t.source_lang}-${t.target_lang}">
+                <div class="card border h-100 translation-card" data-translation-id="${t.id}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="card-title mb-1">${t.name}</h6>
+                                <small class="text-muted">${t.created_at}</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                                    <i class="mdi mdi-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="editTranslation(${t.id})">
+                                        <i class="mdi mdi-pencil me-2"></i>Modifier
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="duplicateTranslation(${t.id})">
+                                        <i class="mdi mdi-content-copy me-2"></i>Dupliquer
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportTranslation(${t.id})">
+                                        <i class="mdi mdi-download me-2"></i>Exporter
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteTranslation(${t.id})">
+                                        <i class="mdi mdi-delete me-2"></i>Supprimer
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            ${statusBadge}
+                            <span class="badge bg-primary ms-1">${sourceLangName} → ${targetLangName}</span>
+                            ${confidenceBadge}
+                        </div>
+                        <div class="translation-preview mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Texte source</label>
+                                    <div class="source-text">${t.source_text.substring(0, 100)}${t.source_text.length > 100 ? '...' : ''}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted">Traduction</label>
+                                    <div class="target-text">${targetText}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Tokens</small>
+                                <strong>${t.tokens_used}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Caractères</small>
+                                <strong>${t.source_text.length}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Détection</small>
+                                <strong>${LANGUAGE_NAMES[t.detected_lang] || t.detected_lang.toUpperCase()}</strong>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            ${t.status === 'completed' ? `
+                                <button class="btn btn-primary btn-sm" onclick="viewTranslation(${t.id})">
+                                    <i class="mdi mdi-eye me-2"></i>Voir la traduction complète
+                                </button>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="copyTranslation('${t.target_text.replace(/'/g, "\\'")}')">
+                                        <i class="mdi mdi-content-copy"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="shareTranslation(${t.id})">
+                                        <i class="mdi mdi-share"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="downloadTranslation(${t.id})">
+                                        <i class="mdi mdi-download"></i>
+                                    </button>
+                                </div>
+                            ` : t.status === 'processing' ? `
+                                <button class="btn btn-warning btn-sm" disabled>
+                                    <i class="mdi mdi-loading mdi-spin me-2"></i>Traduction en cours...
+                                </button>
+                                <div class="progress" style="height: 4px;">
+                                    <div class="progress-bar bg-warning" style="width: 75%"></div>
+                                </div>
+                            ` : `
+                                <button class="btn btn-outline-primary btn-sm" onclick="continueTranslation(${t.id})">
+                                    <i class="mdi mdi-play me-2"></i>Continuer
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+}
+
+function filterTranslations() {
+    const statusFilter = $('#statusFilter').val();
+    const languageFilter = $('#languageFilter').val();
+    
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'get_translations',
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                translationFilteredItems = response.data.filter(item => {
+                    const statusMatch = !statusFilter || item.status === statusFilter;
+                    const languageMatch = !languageFilter || item.target_lang === languageFilter;
+                    return statusMatch && languageMatch;
+                });
+                translationTotalItems = translationFilteredItems.length;
+                translationCurrentPage = 1;
+                renderTranslations();
+                updateTranslationPagination();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors du filtrage des traductions.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors du filtrage.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function updateTranslationPagination() {
+    const totalPages = Math.ceil(translationTotalItems / translationItemsPerPage);
+    const startIndex = (translationCurrentPage - 1) * translationItemsPerPage;
+    const endIndex = Math.min(startIndex + translationItemsPerPage, translationTotalItems);
+    
+    $('#translationCurrentStart').text(translationTotalItems > 0 ? startIndex + 1 : 0);
+    $('#translationCurrentEnd').text(endIndex);
+    $('#translationTotalItems').text(translationTotalItems);
+    
+    updateTranslationPaginationControls(totalPages);
+    
+    if (totalPages <= 1) {
+        $('#translationPaginationSection').hide();
+    } else {
+        $('#translationPaginationSection').show();
+    }
+}
+
+function updateTranslationPaginationControls(totalPages) {
+    const $controls = $('#translationPaginationControls');
+    $controls.find('.translation-page-number').remove();
+    
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = i === translationCurrentPage ? 'active' : '';
+        $controls.find('#translationNextPage').before(`
+            <li class="page-item translation-page-number ${isActive}">
+                <a class="page-link" href="#" onclick="goToTranslationPage(${i})">${i}</a>
+            </li>
+        `);
+    }
+    
+    $('#translationPrevPage').toggleClass('disabled', translationCurrentPage === 1);
+    $('#translationNextPage').toggleClass('disabled', translationCurrentPage === totalPages || totalPages === 0);
+}
+
+function goToTranslationPage(page) {
+    const totalPages = Math.ceil(translationTotalItems / translationItemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    translationCurrentPage = page;
+    renderTranslations();
+    updateTranslationPagination();
+    
+    $('html, body').animate({
+        scrollTop: $('#translationsList').offset().top - 100
+    }, 300);
+}
+
+function viewTranslation(id) {
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'get_translation',
+            translation_id: id,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+                $('#translationTitle').text(data.name);
+                $('#fullSourceText').text(data.source_text || 'Aucun texte source');
+                $('#fullTargetText').text(data.target_text || 'Aucune traduction');
+                $('#sourceLangDisplay').text(LANGUAGE_NAMES[data.source_lang] || data.source_lang.toUpperCase());
+                $('#targetLangDisplay').text(LANGUAGE_NAMES[data.target_lang] || data.target_lang.toUpperCase());
+                $('#modalTokens').text(data.tokens_used || '0');
+                $('#modalConfidence').text(data.confidence ? `${data.confidence}%` : '--');
+                $('#modalSourceChars').text(data.source_chars || '0');
+                $('#modalTargetChars').text(data.target_chars || '0');
+                $('#translationViewModal').data('translationId', id);
+                
+                $('#translationViewModal').modal('show');
+                Toastify({
+                    text: "Détails de la traduction chargés !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors du chargement des détails.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors du chargement des détails.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function copyTranslation(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        Toastify({
+            text: "Traduction copiée dans le presse-papiers !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }).catch(err => {
+        console.error("Erreur lors de la copie:", err);
+        Toastify({
+            text: "Erreur lors de la copie du texte.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+    });
+}
+
+function copyModalTranslation() {
+    const text = $('#fullTargetText').text();
+    copyTranslation(text);
+}
+
+function downloadTranslation(id) {
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'get_translation',
+            translation_id: id,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+                const blob = new Blob([data.target_text], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${data.name.replace(/\s+/g, '_')}.txt`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                Toastify({
+                    text: "Téléchargement démarré !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.message || "Erreur lors du téléchargement.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.message || "Erreur serveur lors du téléchargement.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function downloadModalTranslation() {
+    const id = $('#translationViewModal').data('translationId');
+    if (id) downloadTranslation(id);
+}
+
+function shareTranslation(id) {
+    const shareUrl = `${window.location.origin}/share/translation/${id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        Toastify({
+            text: "Lien de partage copié !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }).catch(err => {
+        console.error("Erreur lors de la copie:", err);
+        Toastify({
+            text: "Erreur lors de la copie du lien.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+    });
+}
+
+
+
+function editTranslation(id) {
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'get_translation',
+            translation_id: id,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+                $('#translationName').val(data.name);
+                $('#sourceText').val(data.source_text);
+                $('#targetText').val(data.target_text);
+                $('#sourceLang').val(data.source_lang);
+                $('#targetLang').val(data.target_lang);
+                $('#translationStyle').val('standard'); // Ou récupérer depuis la DB si disponible
+                updateCharacterCounts();
+                showTranslationTool();
+                Toastify({
+                    text: "Éditeur de traduction ouvert !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.error || "Erreur lors du chargement de la traduction.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.error || "Erreur serveur lors du chargement.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function editModalTranslation() {
+    const id = $('#translationViewModal').data('translationId');
+    if (id) editTranslation(id);
+}
+
+function duplicateTranslation(id) {
+    $.ajax({
+        url: '{% url "custom_admin:user_translations" %}',
+        method: 'POST',
+        data: {
+            action: 'duplicate_translation',
+            translation_id: id,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                translationFilteredItems.push(response.data);
+                translationTotalItems = translationFilteredItems.length;
+                renderTranslations();
+                updateTranslationPagination();
+                Toastify({
+                    text: "Traduction dupliquée avec succès !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.error || "Erreur lors de la duplication.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.error || "Erreur serveur lors de la duplication.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+function exportTranslation(id) {
+    downloadTranslation(id); // Utiliser la même logique que le téléchargement
+}
+
+function deleteTranslation(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette traduction ?')) {
+        $.ajax({
+            url: '{% url "custom_admin:user_translations" %}',
+            method: 'POST',
+            data: {
+                action: 'delete_translation',
+                translation_id: id,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    translationFilteredItems = translationFilteredItems.filter(item => item.id !== id);
+                    translationTotalItems = translationFilteredItems.length;
+                    renderTranslations();
+                    updateTranslationPagination();
+                    Toastify({
+                        text: response.message || "Traduction supprimée avec succès !",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#0d9488",
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    Toastify({
+                        text: response.error || "Erreur lors de la suppression.",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545",
+                        stopOnFocus: true,
+                    }).showToast();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur AJAX:", status, error, xhr.responseText);
+                Toastify({
+                    text: xhr.responseJSON?.error || "Erreur serveur lors de la suppression.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        });
+    }
+}
+
+function continueTranslation(id) {
+    editTranslation(id);
+}
+</script>
+
+<style>
+.translation-card {
+    transition: all 0.3s ease;
+}
+
+.translation-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.translation-preview {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.source-text, .target-text {
+    background: var(--esacode-gray-50);
+    padding: var(--esacode-space-sm);
+    border-radius: var(--esacode-radius-sm);
+    border-left: 3px solid var(--esacode-primary);
+    min-height: 60px;
+}
+
+.target-text {
+    border-left-color: var(--esacode-success);
+}
+
+#translation-tool, #language-detection {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.list-group-item {
+    border-left: 3px solid var(--esacode-primary) !important;
+    border-radius: var(--esacode-radius-sm) !important;
+    margin-bottom: var(--esacode-space-xs) !important;
+}
+
+.modal-xl .modal-body {
+    padding: 2rem;
+}
+
+.card.bg-light {
+    background: var(--esacode-gray-50) !important;
+}
+
+[data-bs-theme="dark"] .source-text,
+[data-bs-theme="dark"] .target-text {
+    background: var(--esacode-gray-600) !important;
+    color: var(--esacode-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .card.bg-light {
+    background: var(--esacode-gray-600) !important;
+}
+</style>
+{% endblock %}
+
+
+

@@ -1,0 +1,329 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Transfert Admin{% endblock %}
+
+{% block extra_css %}
+<link type="text/css" href="{% static 'custom_admin/css/plugins/apexcharts.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">💸 Dashboard Administrateur</h2>
+                        <p class="text-muted mb-0">Vue d'ensemble de votre plateforme de transfert d'argent</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary refresh-stats" onclick="location.reload()" title="Actualiser">
+                            <i class="mdi mdi-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTRES DATE -->
+<div class="container-fluid">
+    <div class="card border mb-4">
+        <div class="card-body">
+            <form method="GET" class="d-flex gap-3 align-items-end">
+                <div class="form-group">
+                    <label class="form-label">Du</label>
+                    <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Au</label>
+                    <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="mdi mdi-filter"></i> Filtrer
+                </button>
+                <a href="{% url 'custom_admin:dashboard' %}" class="btn btn-outline-secondary">Réinitialiser</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- STATISTIQUES PRINCIPALES -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ total_users }}</h4>
+                        <p class="text-muted mb-0">Utilisateurs</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-account-multiple"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ total_transfers }}</h4>
+                        <p class="text-muted mb-0">Transferts Total</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-swap-horizontal"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ successful_transfers }}</h4>
+                        <p class="text-muted mb-0">Transferts Réussis</p>
+                    </div>
+                    <div class="widget-icon text-success">
+                        <i class="mdi mdi-check-circle"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ our_revenue|floatformat:0 }} FCFA</h4>
+                        <p class="text-muted mb-0">Nos Bénéfices</p>
+                    </div>
+                    <div class="widget-icon text-success">
+                        <i class="mdi mdi-cash-multiple"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATISTIQUES COMPLÉMENTAIRES -->
+    <div class="row">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ transfers_today }}</h4>
+                        <p class="text-muted mb-0">Transferts Aujourd'hui</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-calendar-today"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ pending_transfers }}</h4>
+                        <p class="text-muted mb-0">En cours</p>
+                    </div>
+                    <div class="widget-icon text-warning">
+                        <i class="mdi mdi-clock-outline"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ failed_transfers }}</h4>
+                        <p class="text-muted mb-0">Échoués</p>
+                    </div>
+                    <div class="widget-icon text-danger">
+                        <i class="mdi mdi-alert-circle"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ total_volume|floatformat:0 }} FCFA</h4>
+                        <p class="text-muted mb-0">Volume Transféré</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-bank-transfer"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS SUPPLÉMENTAIRES PERTINENTES -->
+    <div class="row">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ paydunia_fees|floatformat:0 }} FCFA</h4>
+                        <p class="text-muted mb-0">Frais Paydunia</p>
+                    </div>
+                    <div class="widget-icon text-info">
+                        <i class="mdi mdi-wallet"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ average_transfer|floatformat:0 }} FCFA</h4>
+                        <p class="text-muted mb-0">Moyenne par Transfert</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-calculator"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">{{ success_rate|floatformat:0 }}%</h4>
+                        <p class="text-muted mb-0">Taux de Succès</p>
+                    </div>
+                    <div class="widget-icon text-success">
+                        <i class="mdi mdi-trending-up"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border">
+                <div class="card-body widget-desk">
+                    <div class="pull-right">
+                        <h4 class="mt-0 mb-0 fw-bold">4</h4>
+                        <p class="text-muted mb-0">Opérateurs Supportés</p>
+                    </div>
+                    <div class="widget-icon">
+                        <i class="mdi mdi-access-point-network"></i>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP OPÉRATEURS -->
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3">Top Opérateurs Payin</h5>
+                    <ul class="list-group">
+                        {% for op in top_from %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ op.from_wallet|upper }}
+                            <span class="badge bg-primary">{{ op.volume|floatformat:0 }} FCFA ({{ op.count }} transferts)</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted">Aucun données</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3">Top Opérateurs Payout</h5>
+                    <ul class="list-group">
+                        {% for op in top_to %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ op.to_wallet|upper }}
+                            <span class="badge bg-primary">{{ op.volume|floatformat:0 }} FCFA ({{ op.count }} transferts)</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted">Aucun données</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS RAPIDES -->
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-24 mt-0">Actions Rapides</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'custom_admin:users' %}" class="btn btn-primary btn-block">
+                                <i class="mdi mdi-account-multiple"></i> Gérer Utilisateurs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'custom_admin:transfers' %}" class="btn btn-success btn-block">
+                                <i class="mdi mdi-swap-horizontal"></i> Voir Transferts
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'custom_admin:fees' %}" class="btn btn-info btn-block">
+                                <i class="mdi mdi-percent"></i> Gérer Frais
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'admin:index' %}" class="btn btn-warning btn-block">
+                                <i class="mdi mdi-cog"></i> Admin Django
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
+        stopOnFocus: true,
+    }).showToast();
+}
+</script>
+{% endblock %}

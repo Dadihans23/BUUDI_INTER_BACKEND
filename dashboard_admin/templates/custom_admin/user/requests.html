@@ -1,0 +1,549 @@
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Mes Requêtes - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Mes Requêtes API</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Mes Requêtes</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="exportRequests()">
+                            <i class="mdi mdi-download"></i> Exporter
+                        </button>
+                        {% comment %} <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-primary">
+                            <i class="mdi mdi-arrow-left"></i> Retour au Dashboard
+                        </a> {% endcomment %}
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border mb-4">
+                <div class="card-body">
+                    <h6 class="card-title">Filtres</h6>
+                    <form id="filterForm" method="GET">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Type de requête</label>
+                                    <select class="form-control" id="typeFilter" name="type">
+                                        <option value="">Tous les types</option>
+                                        <option value="TTS" {% if request.GET.type == 'TTS' %}selected{% endif %}>Text-to-Speech</option>
+                                        <option value="TRADUCTION" {% if request.GET.type == 'TRADUCTION' %}selected{% endif %}>Traduction</option>
+                                        <option value="DETECTION" {% if request.GET.type == 'DETECTION' %}selected{% endif %}>Détection langue</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Statut</label>
+                                    <select class="form-control" id="statusFilter" name="status">
+                                        <option value="">Tous les statuts</option>
+                                        <option value="success" {% if request.GET.status == 'success' %}selected{% endif %}>Succès</option>
+                                        <option value="error" {% if request.GET.status == 'error' %}selected{% endif %}>Erreur</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Date de début</label>
+                                    <input type="date" class="form-control" id="startDateFilter" name="start_date" value="{{ request.GET.start_date }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="form-label">Date de fin</label>
+                                    <input type="date" class="form-control" id="endDateFilter" name="end_date" value="{{ request.GET.end_date }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="mdi mdi-filter"></i> Appliquer les filtres
+                                </button>
+                                <a href="{% url 'custom_admin:user_requests' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="mdi mdi-filter-off"></i> Réinitialiser
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ stats.total_requests }}</h4>
+                    <p class="text-muted mb-0">Total requêtes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">{{ stats.total_tokens }}</h4>
+                    <p class="text-muted mb-0">Tokens utilisés</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">{{ stats.success_count }}</h4>
+                    <p class="text-muted mb-0">Succès</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-danger mb-1">{{ stats.error_count }}</h4>
+                    <p class="text-muted mb-0">Erreurs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des requêtes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Historique des Requêtes</h5>
+                        <div class="d-flex gap-2">
+                            <small class="text-muted">{{ requests|length }} résultat(s)</small>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="requestsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Contenu</th>
+                                    <th>Tokens</th>
+                                    <th>Statut</th>
+                                    <th>Temps</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in requests %}
+                                <tr data-type="{{ request.type }}" data-status="{{ request.status }}" data-date="{{ request.date }}">
+                                    <td>
+                                        <span class="font-monospace text-muted">#{{ request.id }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ request.date }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if request.type == 'Text-to-Speech' %}bg-primary{% elif request.type == 'Traduction' %}bg-info{% else %}bg-warning{% endif %}">
+                                            {{ request.type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ request.input }}">
+                                            {{ request.input }}
+                                        </div>
+                                        <small class="text-muted">{{ request.language }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ request.tokens }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if request.status == 'succès' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ request.status|capfirst }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ request.response_time }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails({{ request.id }})" title="Voir les détails">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
+                                            {% if request.status == 'succès' and request.type == 'Text-to-Speech' %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="downloadResult({{ request.id }})" title="Télécharger">
+                                                    <i class="mdi mdi-download"></i>
+                                                </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('{{ request.input|escapejs }}')" title="Copier l'entrée">
+                                                <i class="mdi mdi-content-copy"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="mdi mdi-database-search" style="font-size: 3rem;"></i>
+                                            <p class="mt-2">Aucune requête trouvée</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails Requête -->
+<div class="modal fade" id="requestDetailsModal" tabindex="-1" aria-labelledby="requestDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-info text-white">
+                <h5 class="modal-title d-flex align-items-center" id="requestDetailsModalLabel">
+                    <i class="mdi mdi-information me-2"></i>
+                    <span>Détails de la Requête</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="requestDetailsContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close me-1"></i> Fermer
+                </button>
+                <button type="button" class="btn btn-primary" onclick="copyRequestData()">
+                    <i class="mdi mdi-content-copy me-1"></i> Copier les données
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+$(document).ready(function() {
+    // Vérifier jQuery et Bootstrap
+    if (typeof $ === 'undefined') {
+        console.error("jQuery n'est pas chargé.");
+    }
+    if (typeof $.fn.modal === 'undefined') {
+        console.error("Bootstrap Modal n'est pas chargé.");
+    }
+    // Vérifier Toastify
+    if (typeof Toastify === 'undefined') {
+        console.error("Toastify n'est pas chargé.");
+    } else {
+        Toastify({
+            text: "Liste de vos requêtes API chargée !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }
+});
+
+function viewRequestDetails(requestId) {
+    console.log("Tentative d'ouverture de la modale pour l'ID:", requestId);
+    $.ajax({
+        url: `/admin/requests/${requestId}/`,  // URL corrigée
+        method: 'GET',
+        dataType: 'json',
+        beforeSend: function() {
+            console.log("Envoi de la requête AJAX vers /admin/requests/" + requestId + "/");
+        },
+        success: function(details) {
+            console.log("Réponse AJAX reçue:", details);
+            try {
+                // Échapper les données pour éviter les attaques XSS
+                const escapeHtml = (str) => {
+                    const div = document.createElement('div');
+                    div.textContent = str || '';
+                    return div.innerHTML;
+                };
+
+                const content = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="mdi mdi-information-outline me-2"></i>Informations Générales
+                            </h6>
+                            <table class="table table-sm table-borderless">
+                                <tr><td class="fw-bold text-muted">ID:</td><td>#${escapeHtml(details.id)}</td></tr>
+                                <tr><td class="fw-bold text-muted">Date:</td><td>${escapeHtml(details.date)}</td></tr>
+                                <tr><td class="fw-bold text-muted">Type:</td><td><span class="badge bg-${details.type === 'Text-to-Speech' ? 'primary' : details.type === 'Traduction' ? 'info' : 'warning'}">${escapeHtml(details.type)}</span></td></tr>
+                                <tr><td class="fw-bold text-muted">Tokens:</td><td><span class="badge bg-secondary">${escapeHtml(details.tokens)}</span></td></tr>
+                                <tr><td class="fw-bold text-muted">Statut:</td><td><span class="badge bg-${details.status === 'succès' ? 'success' : 'danger'}">${escapeHtml(details.status)}</span></td></tr>
+                                <tr><td class="fw-bold text-muted">Temps de réponse:</td><td>${escapeHtml(details.response_time)}</td></tr>
+                                <tr><td class="fw-bold text-muted">Endpoint:</td><td><code>${escapeHtml(details.api_endpoint)}</code></td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="mdi mdi-cog-outline me-2"></i>Détails Techniques
+                            </h6>
+                            <table class="table table-sm table-borderless">
+                                <tr><td class="fw-bold text-muted">Langue:</td><td>${escapeHtml(details.language)}</td></tr>
+                                ${details.voice !== 'N/A' ? '<tr><td class="fw-bold text-muted">Voix:</td><td>' + escapeHtml(details.voice) + '</td></tr>' : ''}
+                                ${details.error_code !== 'N/A' ? '<tr><td class="fw-bold text-muted">Code erreur:</td><td><code class="text-danger">' + escapeHtml(details.error_code) + '</code></td></tr>' : ''}
+                                ${details.error_message !== 'N/A' ? '<tr><td class="fw-bold text-muted">Message erreur:</td><td class="text-danger">' + escapeHtml(details.error_message) + '</td></tr>' : ''}
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="mdi mdi-code-tags me-2"></i>Contenu de la Requête
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Entrée:</h6>
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <pre class="mb-0 text-wrap"><code>${escapeHtml(details.input)}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Sortie:</h6>
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            ${details.type === 'Text-to-Speech' && details.status === 'succès' ? 
+                                                '<audio controls class="w-100 mb-2"><source src="' + escapeHtml(details.output) + '" type="audio/mpeg">Votre navigateur ne supporte pas l\'audio.</audio><br><small class="text-muted">Fichier audio généré</small>' : 
+                                                '<pre class="mb-0 text-wrap"><code>' + escapeHtml(details.output) + '</code></pre>'
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ${details.request_headers ? `
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="mdi mdi-upload me-2"></i>En-têtes de Requête
+                            </h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <pre class="mb-0"><code>${escapeHtml(JSON.stringify(details.request_headers, null, 2))}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="mdi mdi-download me-2"></i>En-têtes de Réponse
+                            </h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <pre class="mb-0"><code>${escapeHtml(JSON.stringify(details.response_headers, null, 2))}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                document.getElementById('requestDetailsContent').innerHTML = content;
+                console.log("Contenu de la modale défini, ouverture de la modale...");
+                $('#requestDetailsModal').modal('show');
+            } catch (e) {
+                console.error("Erreur lors de la construction du contenu de la modale:", e);
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({
+                        text: "Erreur lors de l'affichage des détails: " + e.message,
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545",
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    console.error("Erreur Toastify non disponible:", e.message);
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: "Erreur lors du chargement des détails: " + (xhr.responseJSON?.message || error),
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                console.error("Erreur Toastify non disponible:", xhr.responseJSON?.message || error);
+            }
+        }
+    });
+}
+
+function downloadResult(requestId) {
+    console.log("Tentative de téléchargement pour l'ID:", requestId);
+    $.ajax({
+        url: `/admin/requests/${requestId}/`,  // URL corrigée
+        method: 'GET',
+        dataType: 'json',
+        success: function(details) {
+            console.log("Réponse pour downloadResult:", details);
+            if (details.type === 'Text-to-Speech' && details.status === 'succès') {
+                const link = document.createElement('a');
+                link.href = details.output;
+                link.download = `esacode_tts_${requestId}.mp3`;
+                link.click();
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({
+                        text: "Téléchargement démarré !",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#0d9488",
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    console.log("Téléchargement démarré, mais Toastify non disponible.");
+                }
+            } else {
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({
+                        text: "Aucun fichier audio disponible pour cette requête.",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545",
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    console.error("Aucun fichier audio disponible, Toastify non disponible.");
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX dans downloadResult:", status, error, xhr.responseText);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: "Erreur lors du téléchargement: " + (xhr.responseJSON?.message || error),
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                console.error("Erreur Toastify non disponible:", xhr.responseJSON?.message || error);
+            }
+        }
+    });
+}
+
+function copyToClipboard(text) {
+    console.log("Copie dans le presse-papiers:", text);
+    navigator.clipboard.writeText(text).then(() => {
+        if (typeof Toastify !== 'undefined') {
+            Toastify({
+                text: "Texte copié dans le presse-papiers !",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#0d9488",
+                stopOnFocus: true,
+            }).showToast();
+        } else {
+            console.log("Texte copié, mais Toastify non disponible.");
+        }
+    }).catch((err) => {
+        console.error("Erreur lors de la copie:", err);
+        if (typeof Toastify !== 'undefined') {
+            Toastify({
+                text: "Erreur lors de la copie du texte.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        } else {
+            console.error("Erreur Toastify non disponible:", err.message);
+        }
+    });
+}
+
+function copyRequestData() {
+    console.log("Copie des données de la modale");
+    const content = document.getElementById('requestDetailsContent').innerText;
+    copyToClipboard(content);
+}
+
+function exportRequests() {
+    console.log("Exportation des requêtes");
+    window.location.href = '/admin/requests/export/';  // URL corrigée
+}
+</script>
+
+<style>
+.esacode-stat-card {
+    background: white;
+    border-radius: 12px;
+    border-left: 4px solid #0d9488;
+    transition: all 0.3s ease;
+}
+
+.esacode-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(2, 161, 149, 0.05) !important;
+}
+
+.text-truncate {
+    cursor: help;
+}
+
+pre {
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

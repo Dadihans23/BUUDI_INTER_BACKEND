@@ -1,0 +1,389 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Modifier Pack - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Modifier le pack "{{ pack.name }}"</h3>
+                        <p class="text-muted mb-0">Modifiez les paramètres du pack</p>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:packs' %}">Packs</a></li>
+                                <li class="breadcrumb-item active">Modifier</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card border">
+                <div class="card-body">
+                    <h4 class="header-title border-bottom mb-24 mt-0">Modifier les informations du pack</h4>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="packName" class="form-label">Nom du pack *</label>
+                                    <input type="text" class="form-control" id="packName" name="name" required value="{{ pack.name }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="packPrice" class="form-label">Prix ($) *</label>
+                                    <input type="number" step="0.01" class="form-control" id="packPrice" name="price" required value="{{ pack.price }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="characterLimit" class="form-label">Limite de caractères *</label>
+                                    <input type="number" class="form-control" id="characterLimit" name="character_limit" required value="{{ pack.character_limit }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="duration" class="form-label">Durée (jours)</label>
+                                    <select class="form-control" id="duration" name="duration">
+                                        <option value="30" {% if pack.duration == 30 %}selected{% endif %}>30 jours</option>
+                                        <option value="90" {% if pack.duration == 90 %}selected{% endif %}>90 jours</option>
+                                        <option value="365" {% if pack.duration == 365 %}selected{% endif %}>1 an</option>
+                                        <option value="0" {% if pack.duration == 0 %}selected{% endif %}>Illimité</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required>{{ pack.description }}</textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Fonctionnalités incluses</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="tts" name="features" value="tts" {% if 'tts' in pack.features %}checked{% endif %}>
+                                        <label class="form-check-label" for="tts">Text-to-Speech</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="translation" name="features" value="translation" {% if 'translation' in pack.features %}checked{% endif %}>
+                                        <label class="form-check-label" for="translation">Traduction</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="detection" name="features" value="detection" {% if 'detection' in pack.features %}checked{% endif %}>
+                                        <label class="form-check-label" for="detection">Détection langue</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="voice_clone" name="features" value="voice_clone" {% if 'voice_clone' in pack.features %}checked{% endif %}>
+                                        <label class="form-check-label" for="voice_clone">Clonage vocal</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isBestPlan" name="is_best_plan" {% if pack.is_best_plan %}checked{% endif %}>
+                                <label class="form-check-label" for="isBestPlan">
+                                    Marquer comme "Meilleur plan"
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isActive" name="is_active" {% if pack.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">
+                                    Pack actif
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="mdi mdi-content-save"></i> Sauvegarder les modifications
+                            </button>
+                            <a href="{% url 'custom_admin:pack_detail' pack.id %}" class="btn btn-outline-info">
+                                <i class="mdi mdi-eye"></i> Voir détails
+                            </a>
+                            <a href="{% url 'custom_admin:packs' %}" class="btn btn-outline-secondary">
+                                <i class="mdi mdi-arrow-left"></i> Retour
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <!-- Live Preview -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Aperçu en temps réel</h5>
+                    
+                    <div class="pack-preview">
+                        <div class="text-center p-4 border rounded">
+                            <h4 id="previewName">{{ pack.name }}</h4>
+                            <div class="price-display">
+                                <span class="h2 text-primary">$<span id="previewPrice">{{ pack.price }}</span></span>
+                                <span class="text-muted">/mois</span>
+                            </div>
+                            <p class="text-muted mt-2" id="previewDescription">{{ pack.description }}</p>
+                            
+                            <div class="features-list mt-3">
+                                <div class="text-start">
+                                    <div id="previewFeatures">
+                                        {% for feature in pack.features %}
+                                            <p class="mb-1"><i class="mdi mdi-check text-success"></i> {{ feature|title }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mb-1"><i class="mdi mdi-check text-success"></i> <span id="previewLimit">{{ pack.character_limit|floatformat:0 }}</span> caractères/mois</p>
+                                    <p class="mb-1"><i class="mdi mdi-check text-success"></i> Support email</p>
+                                </div>
+                            </div>
+                            
+                            {% if pack.is_best_plan %}
+                                <div class="badge bg-warning text-dark mb-2">Meilleur choix</div>
+                            {% endif %}
+                            
+                            <button class="btn btn-primary mt-3" disabled>
+                                Choisir ce pack
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pack Statistics -->
+            {% comment %} <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Statistiques du pack</h5>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ pack.subscribers_count|default:12 }}</h4>
+                            <p class="text-muted mb-0">Abonnés</p>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">${{ pack.revenue|default:480 }}</h4>
+                            <p class="text-muted mb-0">Revenus/mois</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning" onclick="duplicatePack({{ pack.id }})">
+                            <i class="mdi mdi-content-copy"></i> Dupliquer ce pack
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deletePack({{ pack.id }})">
+                            <i class="mdi mdi-delete"></i> Supprimer le pack
+                        </button>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+$(document).ready(function() {
+    // Live preview updates
+    $('#packName').on('input', function() {
+        $('#previewName').text($(this).val() || 'Nom du pack');
+    });
+    
+    $('#packPrice').on('input', function() {
+        $('#previewPrice').text($(this).val() || '0.00');
+    });
+    
+    $('#description').on('input', function() {
+        $('#previewDescription').text($(this).val() || 'Description du pack...');
+    });
+    
+    $('#characterLimit').on('input', function() {
+        const limit = $(this).val() || '10,000';
+        $('#previewLimit').text(Number(limit).toLocaleString());
+    });
+    
+    // Features preview
+    $('input[name="features"]').on('change', function() {
+        updateFeaturesPreview();
+    });
+    
+    function updateFeaturesPreview() {
+        const features = [];
+        $('input[name="features"]:checked').each(function() {
+            const labels = {
+                'tts': 'Text-to-Speech',
+                'translation': 'Traduction',
+                'detection': 'Détection de langue',
+                'voice_clone': 'Clonage vocal'
+            };
+            features.push(`<p class="mb-1"><i class="mdi mdi-check text-success"></i> ${labels[$(this).val()]}</p>`);
+        });
+        
+        if (features.length === 0) {
+            features.push('<p class="mb-1"><i class="mdi mdi-check text-success"></i> Aucune fonctionnalité</p>');
+        }
+        
+        $('#previewFeatures').html(features.join(''));
+    }
+    
+    // Form validation
+    $('form').on('submit', function(e) {
+        const name = $('#packName').val().trim();
+        const price = $('#packPrice').val();
+        const description = $('#description').val().trim();
+        const characterLimit = $('#characterLimit').val();
+        
+        if (!name || !price || !description || !characterLimit) {
+            e.preventDefault();
+              Toastify({
+                    text: 'Veuillez remplir tous les champs obligatoires',
+                    duration: 5000,
+                    gravity: 'top',
+                    position: 'right',
+                    className: 'toast-error',
+                    style: { background: '#0d9488' }
+                }).showToast()
+            return false;
+        }
+        
+        if (parseFloat(price) <= 0) {
+            e.preventDefault();
+            Toastify({
+                    text: 'Le prix doit être supérieur à 0',
+                    duration: 5000,
+                    gravity: 'top',
+                    position: 'right',
+                    className: 'toast-error',
+                    style: { background: '#0d9488' }
+                }).showToast()
+            return false;
+        }
+        
+        if (parseInt(characterLimit) <= 0) {
+            e.preventDefault();
+               Toastify({
+                    text: 'La limite de caractères doit être supérieure à 0',
+                    duration: 5000,
+                    gravity: 'top',
+                    position: 'right',
+                    className: 'toast-error',
+                    style: { background: '#0d9488' }
+                }).showToast()
+            
+            return false;
+        }
+    });
+});
+
+function duplicatePack(packId) {
+    if (confirm('Voulez-vous créer une copie de ce pack ?')) {
+        showToast('Pack dupliqué avec succès!', 'success');
+        // Redirect to new pack creation with prefilled data
+        setTimeout(() => {
+            window.location.href = "{% url 'custom_admin:pack_create' %}?duplicate=" + packId;
+        }, 1500);
+    }
+}
+
+function deletePack(packId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce pack ? Cette action est irréversible.')) {
+        showToast('Pack supprimé avec succès!', 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'custom_admin:packs' %}";
+        }, 1500);
+    }
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        showToast(message);
+    }
+}
+</script>
+
+<style>
+.pack-preview {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.price-display {
+    margin: 1rem 0;
+}
+
+.features-list {
+    text-align: left;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+    .btn-custom {
+        @apply tracking-[1px] font-normal text-[15px] rounded-[5px] capitalize outline-none text-sm py-[10px] px-[30px] text-white border hover:-translate-y-[3px];
+    }
+    .form-input {
+        @apply w-full px-3 py-2 border border-[#ced4da] rounded-[5px] focus:outline-none focus:border-[#0d9488];
+    }
+    .alert-success {
+        @apply bg-[#0d9488] text-white p-3 rounded-[5px] mb-4;
+    }
+    .alert-error {
+        @apply bg-[#e3342f] text-white p-3 rounded-[5px] mb-4;
+    }
+    .toastify {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        border-radius: 6px;
+        padding: 10px 20px;
+    }
+    .toast-success {
+        background-color: #0d9488 !important;
+        color: white !important;
+    }
+    .toast-error {
+        background-color: #e3342f !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}

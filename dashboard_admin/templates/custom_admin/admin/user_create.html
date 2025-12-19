@@ -1,0 +1,462 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Créer Utilisateur - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Créer un nouvel utilisateur</h3>
+                        <p class="text-muted mb-0">Ajoutez un nouvel utilisateur au système</p>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:users' %}">Utilisateurs</a></li>
+                                <li class="breadcrumb-item active">Créer</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-8">
+            <!-- User Information -->
+            <div class="card border">
+                <div class="card-body">
+                    <h4 class="header-title border-bottom mb-24 mt-0">Informations personnelles</h4>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="username" class="form-label">Nom d'utilisateur *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required placeholder="johndoe">
+                                    <small class="text-muted">Doit être unique, lettres, chiffres et _ uniquement</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">Email *</label>
+                                    <input type="email" class="form-control" id="email" name="email" required placeholder="john@example.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="firstName" class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" id="firstName" name="first_name" placeholder="John">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="lastName" class="form-label">Nom</label>
+                                    <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Doe">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="password" class="form-label">Mot de passe *</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                            <i class="mdi mdi-eye" id="togglePassword"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Minimum 8 caractères</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirmer mot de passe *</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required placeholder="••••••••">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                            <i class="mdi mdi-eye" id="toggleConfirmPassword"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="phone" class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" placeholder="+33 1 23 45 67 89">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="language" class="form-label">Langue préférée</label>
+                                    <select class="form-control" id="language" name="language">
+                                        <option value="fr" selected>Français</option>
+                                        <option value="en">English</option>
+                                        <option value="es">Español</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="bio" class="form-label">Biographie</label>
+                            <textarea class="form-control" id="bio" name="bio" rows="3" placeholder="Description optionnelle de l'utilisateur..."></textarea>
+                        </div>
+
+                        <h5 class="border-bottom mb-3 pb-2 mt-4">Permissions et statut</h5>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                                    <label class="form-check-label" for="isActive">Compte actif</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="isStaff" name="is_staff">
+                                    <label class="form-check-label" for="isStaff">Accès staff</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="emailVerified" name="email_verified">
+                                    <label class="form-check-label" for="emailVerified">Email pré-vérifié</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% comment %} <div class="form-group mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sendWelcomeEmail" name="send_welcome_email" checked>
+                                <label class="form-check-label" for="sendWelcomeEmail">Envoyer un email de bienvenue</label>
+                            </div>
+                        </div> {% endcomment %}
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="mdi mdi-account-plus"></i> Créer l'utilisateur
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="generatePassword()">
+                                <i class="mdi mdi-key"></i> Générer mot de passe
+                            </button>
+                            <a href="{% url 'custom_admin:users' %}" class="btn btn-outline-secondary">
+                                <i class="mdi mdi-arrow-left"></i> Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Strength -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Force du mot de passe</h5>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="passwordStrengthBar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="passwordStrengthText">Entrez un mot de passe</small>
+                    
+                    <div class="mt-3">
+                        <h6>Critères de sécurité:</h6>
+                        <ul class="list-unstyled">
+                            <li id="lengthCheck" class="text-muted"><i class="mdi mdi-close"></i> Au moins 8 caractères</li>
+                            <li id="uppercaseCheck" class="text-muted"><i class="mdi mdi-close"></i> Une majuscule</li>
+                            <li id="lowercaseCheck" class="text-muted"><i class="mdi mdi-close"></i> Une minuscule</li>
+                            <li id="numberCheck" class="text-muted"><i class="mdi mdi-close"></i> Un chiffre</li>
+                            <li id="specialCheck" class="text-muted"><i class="mdi mdi-close"></i> Un caractère spécial</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <!-- User Preview -->
+            <div class="card border">
+                <div class="card-body text-center">
+                    <h5 class="header-title mb-3">Aperçu utilisateur</h5>
+                    
+                    <div class="avatar-lg bg-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-account text-white" style="font-size: 3rem;"></i>
+                    </div>
+                    
+                    <h4 id="previewName">Nom complet</h4>
+                    <p class="text-muted" id="previewUsername">@username</p>
+                    <p id="previewEmail">email@example.com</p>
+                    
+                    <div class="status-preview mt-3">
+                        <span class="badge bg-success" id="statusBadge">
+                            <i class="mdi mdi-check-circle"></i> Actif
+                        </span>
+                        <span class="badge bg-danger" id="inactiveBadge" style="display: none;">
+                            <i class="mdi mdi-close-circle"></i> Inactif
+                        </span>
+                        <span class="badge bg-warning text-dark" id="staffBadge" style="display: none;">
+                            <i class="mdi mdi-shield-account"></i> Staff
+                        </span>
+                    </div>
+
+                    <div class="mt-3">
+                        <small class="text-muted">L'utilisateur sera créé avec un pack gratuit par défaut</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">💡 Conseils</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="mdi mdi-lightbulb text-warning"></i>
+                            Utilisez un nom d'utilisateur unique et facile à retenir
+                        </li>
+                        <li class="mb-2">
+                            <i class="mdi mdi-lightbulb text-warning"></i>
+                            Générez un mot de passe sécurisé automatiquement
+                        </li>
+                        <li class="mb-2">
+                            <i class="mdi mdi-lightbulb text-warning"></i>
+                            L'email de bienvenue contient les informations de connexion
+                        </li>
+                        <li>
+                            <i class="mdi mdi-lightbulb text-warning"></i>
+                            Les permissions peuvent être modifiées plus tard
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Default Subscription -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Pack par défaut</h5>
+                    <div class="text-center p-3 border rounded">
+                        <h6>Pack Gratuit</h6>
+                        <p class="text-muted mb-1">1,000 caractères/mois</p>
+                        <p class="text-muted mb-1">Text-to-Speech de base</p>
+                        <p class="text-success mb-0">0€/mois</p>
+                    </div>
+                    <small class="text-muted mt-2 d-block">L'utilisateur pourra upgrader son pack plus tard</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Live preview updates
+    $('#firstName, #lastName').on('input', function() {
+        const firstName = $('#firstName').val() || '';
+        const lastName = $('#lastName').val() || '';
+        $('#previewName').text(`${firstName} ${lastName}`.trim() || 'Nom complet');
+    });
+    
+    $('#username').on('input', function() {
+        $('#previewUsername').text('@' + ($(this).val() || 'username'));
+    });
+    
+    $('#email').on('input', function() {
+        $('#previewEmail').text($(this).val() || 'email@example.com');
+    });
+    
+    // Status preview updates
+    $('#isActive').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#statusBadge').show();
+            $('#inactiveBadge').hide();
+        } else {
+            $('#statusBadge').hide();
+            $('#inactiveBadge').show();
+        }
+    });
+    
+    $('#isStaff').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#staffBadge').show();
+        } else {
+            $('#staffBadge').hide();
+        }
+    });
+    
+    // Password strength checker
+    $('#password').on('input', function() {
+        checkPasswordStrength($(this).val());
+    });
+    
+    // Password confirmation
+    $('#confirmPassword').on('input', function() {
+        const password = $('#password').val();
+        const confirmPassword = $(this).val();
+        
+        if (confirmPassword && password !== confirmPassword) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    // Form validation
+    $('form').on('submit', function(e) {
+        const username = $('#username').val().trim();
+        const email = $('#email').val().trim();
+        const password = $('#password').val();
+        const confirmPassword = $('#confirmPassword').val();
+        
+        if (!username || !email || !password) {
+            e.preventDefault();
+            showToast('Veuillez remplir tous les champs obligatoires', 'error');
+            return false;
+        }
+        
+        if (!isValidEmail(email)) {
+            e.preventDefault();
+            showToast('Veuillez entrer une adresse email valide', 'error');
+            return false;
+        }
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            showToast('Les mots de passe ne correspondent pas', 'error');
+            return false;
+        }
+        
+        if (password.length < 8) {
+            e.preventDefault();
+            showToast('Le mot de passe doit contenir au moins 8 caractères', 'error');
+            return false;
+        }
+    });
+});
+
+function checkPasswordStrength(password) {
+    let score = 0;
+    
+    // Length check
+    if (password.length >= 8) {
+        score += 20;
+        $('#lengthCheck').removeClass('text-muted').addClass('text-success').html('<i class="mdi mdi-check"></i> Au moins 8 caractères');
+    } else {
+        $('#lengthCheck').removeClass('text-success').addClass('text-muted').html('<i class="mdi mdi-close"></i> Au moins 8 caractères');
+    }
+    
+    // Uppercase check
+    if (/[A-Z]/.test(password)) {
+        score += 20;
+        $('#uppercaseCheck').removeClass('text-muted').addClass('text-success').html('<i class="mdi mdi-check"></i> Une majuscule');
+    } else {
+        $('#uppercaseCheck').removeClass('text-success').addClass('text-muted').html('<i class="mdi mdi-close"></i> Une majuscule');
+    }
+    
+    // Lowercase check
+    if (/[a-z]/.test(password)) {
+        score += 20;
+        $('#lowercaseCheck').removeClass('text-muted').addClass('text-success').html('<i class="mdi mdi-check"></i> Une minuscule');
+    } else {
+        $('#lowercaseCheck').removeClass('text-success').addClass('text-muted').html('<i class="mdi mdi-close"></i> Une minuscule');
+    }
+    
+    // Number check
+    if (/[0-9]/.test(password)) {
+        score += 20;
+        $('#numberCheck').removeClass('text-muted').addClass('text-success').html('<i class="mdi mdi-check"></i> Un chiffre');
+    } else {
+        $('#numberCheck').removeClass('text-success').addClass('text-muted').html('<i class="mdi mdi-close"></i> Un chiffre');
+    }
+    
+    // Special character check
+    if (/[^A-Za-z0-9]/.test(password)) {
+        score += 20;
+        $('#specialCheck').removeClass('text-muted').addClass('text-success').html('<i class="mdi mdi-check"></i> Un caractère spécial');
+    } else {
+        $('#specialCheck').removeClass('text-success').addClass('text-muted').html('<i class="mdi mdi-close"></i> Un caractère spécial');
+    }
+    
+    // Update progress bar
+    let barClass = score < 40 ? 'bg-danger' : score < 80 ? 'bg-warning' : 'bg-success';
+    let text = score < 40 ? 'Faible' : score < 80 ? 'Moyen' : 'Fort';
+    
+    $('#passwordStrengthBar').removeClass('bg-danger bg-warning bg-success').addClass(barClass).css('width', score + '%');
+    $('#passwordStrengthText').text(password ? text : 'Entrez un mot de passe');
+}
+
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById('toggle' + fieldId.charAt(0).toUpperCase() + fieldId.slice(1));
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.className = 'mdi mdi-eye-off';
+    } else {
+        field.type = 'password';
+        icon.className = 'mdi mdi-eye';
+    }
+}
+
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    
+    // Ensure at least one of each required type
+    password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+    password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
+    password += '0123456789'[Math.floor(Math.random() * 10)];
+    password += '!@#$%^&*'[Math.floor(Math.random() * 8)];
+    
+    // Fill the rest randomly
+    for (let i = 4; i < 12; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+    }
+    
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    
+    $('#password').val(password);
+    $('#confirmPassword').val(password);
+    checkPasswordStrength(password);
+    
+    showToast('Mot de passe généré!', 'success');
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        showToast(message);
+    }
+}
+</script>
+
+<style>
+.avatar-lg { width: 80px; height: 80px; }
+.status-preview .badge { margin: 0 0.25rem; }
+.form-label { font-weight: 600; color: #495057; }
+.card { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.is-invalid { border-color: #dc3545; }
+#lengthCheck, #uppercaseCheck, #lowercaseCheck, #numberCheck, #specialCheck { transition: all 0.3s ease; }
+</style>
+{% endblock %}

@@ -7,6 +7,11 @@ class OperatorFees(models.Model):
     payin_fee_percent = models.DecimalField(max_digits=5, decimal_places=3, default=2.000)   # 2%
     payout_fee_percent = models.DecimalField(max_digits=5, decimal_places=3, default=2.000)  # 2%
     updated_at = models.DateTimeField(auto_now=True)
+    
+    our_fee_percent = models.DecimalField(
+        max_digits=5, decimal_places=3, default=1.500,
+        help_text="Ta commission sur chaque transfert (ex: 1.5%)"
+    )
 
     def __str__(self):
         return f"{self.operator.upper()} → Payin {self.payin_fee_percent}% | Payout {self.payout_fee_percent}%"

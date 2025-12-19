@@ -1,0 +1,1805 @@
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Notifications - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Notifications</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Notifications</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                            <i class="mdi mdi-check-all"></i> Tout marquer comme lu
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearAllNotifications()">
+                            <i class="mdi mdi-delete-sweep"></i> Tout effacer
+                        </button>
+
+                        {% comment %} <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a> {% endcomment %}
+
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ stats.total }}</h4>
+                    <p class="text-muted mb-0">Total notifications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">{{ stats.unread }}</h4>
+                    <p class="text-muted mb-0">Non lues</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">{{ stats.success }}</h4>
+                    <p class="text-muted mb-0">Succès</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">{{ stats.warning }}</h4>
+                    <p class="text-muted mb-0">Avertissements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Filtrer les notifications</h6>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="typeFilter" style="width: auto;" onchange="applyFilters()">
+                                <option value="" {% if not type_filter %}selected{% endif %}>Tous les types</option>
+                                <option value="success" {% if type_filter == 'success' %}selected{% endif %}>Succès</option>
+                                <option value="warning" {% if type_filter == 'warning' %}selected{% endif %}>Avertissements</option>
+                                <option value="info" {% if type_filter == 'info' %}selected{% endif %}>Informations</option>
+                                <option value="error" {% if type_filter == 'error' %}selected{% endif %}>Erreurs</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;" onchange="applyFilters()">
+                                <option value="" {% if not status_filter %}selected{% endif %}>Toutes</option>
+                                <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>Non lues</option>
+                                <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Lues</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="notification-list">
+                {% for notification in page_obj %}
+                <div class="notification-item card border mb-3 {% if not notification.read %}unread{% endif %}" 
+                     data-type="{{ notification.type }}" 
+                     data-status="{% if notification.read %}read{% else %}unread{% endif %}"
+                     data-id="{{ notification.id }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="notification-icon me-3">
+                                <div class="icon-wrapper bg-{{ notification.type }}">
+                                    <i class="mdi {{ notification.icon }} text-white"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="notification-content flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="notification-title mb-1">{{ notification.title }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if not notification.read %}
+                                            <span class="badge bg-primary badge-pulse">Nouveau</span>
+                                        {% endif %}
+                                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted" data-bs-toggle="dropdown">
+                                                <i class="mdi mdi-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if not notification.read %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsRead({{ notification.id }}); return false;">
+                                                        <i class="mdi mdi-check me-2"></i>Marquer comme lu
+                                                    </a></li>
+                                                {% else %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsUnread({{ notification.id }}); return false;">
+                                                        <i class="mdi mdi-email-mark-as-unread me-2"></i>Marquer comme non lu
+                                                    </a></li>
+                                                {% endif %}
+                                                {% comment %} {% if notification.action_url %}
+                                                    <li><a class="dropdown-item" href="{{ notification.action_url }}">
+                                                        <i class="mdi mdi-open-in-new me-2"></i>Voir détails
+                                                    </a></li>
+                                                {% endif %} {% endcomment %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteNotification({{ notification.id }}); return false;">
+                                                    <i class="mdi mdi-delete me-2"></i>Supprimer
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p class="notification-message mb-2">{{ notification.message }}</p>
+                                
+                                {% comment %} {% if notification.action_url %}
+                                    <div class="notification-actions">
+                                        <a href="{{ notification.action_url }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="mdi mdi-arrow-right me-1"></i>Voir les détails
+                                        </a>
+                                    </div>
+                                {% endif %} {% endcomment %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row" id="paginationSection">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    <small class="text-muted">
+                        Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                        sur {{ page_obj.paginator.count }} notifications
+                    </small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="items-per-page">
+                        <select class="form-select form-select-sm" id="itemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                            <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                            <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                            <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 par page</option>
+                        </select>
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                    <i class="mdi mdi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                    <i class="mdi mdi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL : VIDER TOUTES LES NOTIFICATIONS -->
+<div class="modal fade" id="clearNotificationsModal" tabindex="-1" aria-labelledby="clearNotificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-danger text-white">
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="mdi mdi-notification-clear me-2"></i>
+                    Vider toutes les notifications
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="mdi mdi-alert-circle text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h6 class="mb-3">Supprimer toutes les notifications ?</h6>
+                <p class="text-muted mb-0">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer border-0 bg-light justify-content-center">
+                <button type="button" class="btn btn-outline-secondary me-3" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close me-1"></i> Annuler
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmClearAllNotifications">
+                    <i class="mdi mdi-delete-sweep me-1"></i> Tout supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- MODAL : SUPPRIMER UNE NOTIFICATION -->
+<div class="modal fade" id="deleteSingleNotificationModal" tabindex="-1" aria-labelledby="deleteSingleNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-danger text-white">
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="mdi mdi-bell-remove me-2"></i>
+                    Supprimer la notification
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="mdi mdi-alert-circle-outline text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h6 class="mb-3">Supprimer cette notification ?</h6>
+                <p class="text-muted small" id="notificationPreview">
+                    <!-- Le titre ou extrait sera injecté ici -->
+                </p>
+                <p class="text-danger fw-bold">Action irréversible.</p>
+            </div>
+            <div class="modal-footer border-0 bg-light justify-content-center">
+                <button type="button" class="btn btn-outline-secondary me-3" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close me-1"></i> Annuler
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteSingle">
+                    <i class="mdi mdi-delete me-1"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+function applyFilters() {
+    const typeFilter = $('#typeFilter').val();
+    const statusFilter = $('#statusFilter').val();
+    const perPage = $('#itemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 1);
+    if (typeFilter) {
+        url.searchParams.set('type', typeFilter);
+    } else {
+        url.searchParams.delete('type');
+    }
+    if (statusFilter) {
+        url.searchParams.set('status', statusFilter);
+    } else {
+        url.searchParams.delete('status');
+    }
+    if (perPage) {
+        url.searchParams.set('per_page', perPage);
+    }
+    window.location.href = url.toString();
+}
+
+function updateItemsPerPage() {
+    const perPage = $('#itemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 1);
+    url.searchParams.set('per_page', perPage);
+    window.location.href = url.toString();
+}
+
+$(document).ready(function() {
+    // Mark as read when clicking on notification
+    $('.notification-item').on('click', function(e) {
+        if (!$(e.target).closest('.dropdown, .btn').length) {
+            const notificationId = $(this).data('id');
+            if ($(this).hasClass('unread')) {
+                markAsRead(notificationId);
+            }
+        }
+    });
+});
+
+function markAsRead(notificationId) {
+    $.ajax({
+        url: `{% url 'custom_admin:mark_notification_read' notification_id=0 %}`.replace('0', notificationId),
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const item = $(`.notification-item[data-id="${notificationId}"]`);
+                item.removeClass('unread').addClass('read');
+                item.attr('data-status', 'read');
+                item.find('.badge-pulse').fadeOut();
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage comme lu.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function markAsUnread(notificationId) {
+    $.ajax({
+        url: `{% url 'custom_admin:mark_notification_unread' notification_id=0 %}`.replace('0', notificationId),
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const item = $(`.notification-item[data-id="${notificationId}"]`);
+                item.removeClass('read').addClass('unread');
+                item.attr('data-status', 'unread');
+                if (!item.find('.badge-pulse').length) {
+                    item.find('.notification-title').after('<span class="badge bg-primary badge-pulse ms-2">Nouveau</span>');
+                }
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage comme non lu.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function deleteNotification(notificationId) {
+    // Récupérer le titre ou message de la notification pour l'afficher dans le modal
+    const item = $(`.notification-item[data-id="${notificationId}"]`);
+    const title = item.find('.notification-title').text() || item.find('p').first().text().substring(0, 60) + '...';
+    
+    // Mettre à jour le texte du modal
+    document.getElementById('notificationPreview').textContent = title;
+
+    // Ouvrir le modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteSingleNotificationModal'));
+    modal.show();
+
+    //  // Supprimer l'ancien écouteur pour éviter les doublons
+    const confirmBtn = document.getElementById('confirmDeleteSingle');
+    confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+    const newConfirmBtn = document.getElementById('confirmDeleteSingle');
+
+    // Action au clic sur "Supprimer"
+    newConfirmBtn.addEventListener('click', function () {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> Suppression...';
+
+        $.ajax({
+            url: `{% url 'custom_admin:delete_notification' notification_id=0 %}`.replace('0', notificationId),
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    item.fadeOut(300, function() {
+                        $(this).remove();
+                        updateStats();
+                        if ($('.notification-item').length === 0) {
+                            $('.notification-list').html(`
+                                <div class="text-center py-5">
+                                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                                </div>
+                            `);
+                        }
+                    });
+                    showToast(response.message, 'success');
+                } else {
+                    showToast(response.message || 'Erreur lors de la suppression.', 'error');
+                }
+            },
+            error: function(xhr) {
+                showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+            },
+            complete: function() {
+                modal.hide();
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    });
+}
+
+function markAllAsRead() {
+    $.ajax({
+        url: '{% url "custom_admin:mark_all_notifications_read" %}',
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('.notification-item.unread').each(function() {
+                    const notificationId = $(this).data('id');
+                    $(this).removeClass('unread').addClass('read');
+                    $(this).attr('data-status', 'read');
+                    $(this).find('.badge-pulse').fadeOut();
+                });
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage de toutes les notifications.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function clearAllNotifications() {
+    // Ouvre le modal personnalisé
+    const clearModal = new bootstrap.Modal(document.getElementById('clearNotificationsModal'));
+    clearModal.show();
+}
+
+// Écoute le clic sur le bouton "Confirmer" du modal
+document.getElementById('confirmClearAllNotifications')?.addEventListener('click', function () {
+    const button = this;
+    const modal = document.getElementById('clearNotificationsModal');
+    const originalText = button.innerHTML;
+
+    // Désactive le bouton + loading
+    button.disabled = true;
+    button.innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> Suppression...';
+
+    $.ajax({
+        url: '{% url "custom_admin:clear_all_notifications" %}',
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('.notification-item').fadeOut(300, function() {
+                    $('.notification-list').html(`
+                        <div class="text-center py-5">
+                            <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                            <h5 class="text-muted mt-3">Aucune notification</h5>
+                            <p class="text-muted">Vos notifications apparaîtront ici</p>
+                        </div>
+                    `);
+                    updateStats();
+                });
+                showToast(response.message, 'success');
+            } else {
+                showToast(response.message || 'Erreur lors de la suppression.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        },
+        complete: function() {
+            // Ferme le modal et réactive le bouton
+            bootstrap.Modal.getInstance(modal).hide();
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    });
+});
+
+function updateStats() {
+    $.ajax({
+        url: '{% url "custom_admin:user_notifications" %}',
+        method: 'GET',
+        data: { stats_only: true },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('.esacode-stat-card:first h4').text(response.stats.total);
+                $('.esacode-stat-card:nth-child(2) h4').text(response.stats.unread);
+                $('.esacode-stat-card:nth-child(3) h4').text(response.stats.success);
+                $('.esacode-stat-card:nth-child(4) h4').text(response.stats.warning);
+            } else {
+            }
+        },
+        error: function() {
+        }
+    });
+}
+
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
+        stopOnFocus: true,
+    }).showToast();
+}
+</script>
+
+<style>
+.notification-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.notification-item.unread {
+    border-left: 4px solid var(--esacode-primary) !important;
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.02), rgba(2, 161, 149, 0.05)) !important;
+}
+
+.notification-icon {
+    min-width: 40px;
+}
+
+.icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.icon-wrapper.bg-success {
+    background: var(--esacode-success) !important;
+}
+
+.icon-wrapper.bg-warning {
+    background: var(--esacode-warning) !important;
+}
+
+.icon-wrapper.bg-info {
+    background: var(--esacode-info) !important;
+}
+
+.icon-wrapper.bg-error {
+    background: var(--esacode-danger) !important;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--esacode-gray-800);
+}
+
+.notification-message {
+    color: var(--esacode-gray-600);
+    line-height: 1.5;
+}
+
+.badge-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(2, 161, 149, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0);
+    }
+}
+
+.notification-actions {
+    margin-top: 1rem;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+[data-bs-theme="dark"] .notification-item.unread {
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.1), rgba(2, 161, 149, 0.15)) !important;
+}
+
+[data-bs-theme="dark"] .notification-title {
+    color: var(--esacode-gray-100);
+}
+
+[data-bs-theme="dark"] .notification-message {
+    color: var(--esacode-gray-300);
+}
+</style>
+{% endblock %}
+
+
+
+
+
+{% comment %} {% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Notifications - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Notifications</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Notifications</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                            <i class="mdi mdi-check-all"></i> Tout marquer comme lu
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearAllNotifications()">
+                            <i class="mdi mdi-delete-sweep"></i> Tout effacer
+                        </button>
+                        <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ notifications|length }}</h4>
+                    <p class="text-muted mb-0">Total notifications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    {% with unread_count=notifications|length %}
+                        {% with unread=0 %}
+                            {% for notif in notifications %}
+                                {% if not notif.read %}
+                                    {% with unread=unread|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endwith %}
+                        <h4 class="text-warning mb-1">2</h4>
+                    {% endwith %}
+                    <p class="text-muted mb-0">Non lues</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">1</h4>
+                    <p class="text-muted mb-0">Succès</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">1</h4>
+                    <p class="text-muted mb-0">Avertissements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Filtrer les notifications</h6>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="typeFilter" style="width: auto;">
+                                <option value="">Tous les types</option>
+                                <option value="success">Succès</option>
+                                <option value="warning">Avertissements</option>
+                                <option value="info">Informations</option>
+                                <option value="error">Erreurs</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                                <option value="">Toutes</option>
+                                <option value="unread">Non lues</option>
+                                <option value="read">Lues</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="notification-list">
+                {% for notification in notifications %}
+                <div class="notification-item card border mb-3 {% if not notification.read %}unread{% endif %}" 
+                     data-type="{{ notification.type }}" 
+                     data-status="{% if notification.read %}read{% else %}unread{% endif %}"
+                     data-id="{{ notification.id }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="notification-icon me-3">
+                                <div class="icon-wrapper bg-{{ notification.type }}">
+                                    <i class="{{ notification.icon }} text-white"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="notification-content flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="notification-title mb-1">{{ notification.title }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if not notification.read %}
+                                            <span class="badge bg-primary badge-pulse">Nouveau</span>
+                                        {% endif %}
+                                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted" data-bs-toggle="dropdown">
+                                                <i class="mdi mdi-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if not notification.read %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsRead({{ notification.id }})">
+                                                        <i class="mdi mdi-check me-2"></i>Marquer comme lu
+                                                    </a></li>
+                                                {% else %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsUnread({{ notification.id }})">
+                                                        <i class="mdi mdi-email-mark-as-unread me-2"></i>Marquer comme non lu
+                                                    </a></li>
+                                                {% endif %}
+                                                {% if notification.action_url %}
+                                                    <li><a class="dropdown-item" href="{{ notification.action_url }}">
+                                                        <i class="mdi mdi-open-in-new me-2"></i>Voir détails
+                                                    </a></li>
+                                                {% endif %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteNotification({{ notification.id }})">
+                                                    <i class="mdi mdi-delete me-2"></i>Supprimer
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p class="notification-message mb-2">{{ notification.message }}</p>
+                                
+                                {% if notification.action_url %}
+                                    <div class="notification-actions">
+                                        <a href="{{ notification.action_url }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="mdi mdi-arrow-right me-1"></i>Voir les détails
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row" id="paginationSection">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    <small class="text-muted">
+                        Affichage de <span id="currentStart">1</span> à <span id="currentEnd">10</span> 
+                        sur <span id="totalItems">0</span> notifications
+                    </small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="items-per-page">
+                        <select class="form-select form-select-sm" id="itemsPerPage" style="width: auto;">
+                            <option value="5">5 par page</option>
+                            <option value="10" selected>10 par page</option>
+                            <option value="20">20 par page</option>
+                            <option value="50">50 par page</option>
+                        </select>
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="paginationControls">
+                            <li class="page-item" id="prevPage">
+                                <a class="page-link" href="#" onclick="goToPage(currentPage - 1)">
+                                    <i class="mdi mdi-chevron-left"></i>
+                                </a>
+                            </li>
+                            <!-- Page numbers will be generated dynamically -->
+                            <li class="page-item" id="nextPage">
+                                <a class="page-link" href="#" onclick="goToPage(currentPage + 1)">
+                                    <i class="mdi mdi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pagination variables
+let currentPage = 1;
+let itemsPerPage = 10;
+let totalItems = 0;
+let filteredItems = [];
+
+$(document).ready(function() {
+    // Initialize pagination
+    initializePagination();
+    
+    // Filter functionality
+    $('#typeFilter, #statusFilter').on('change', filterNotifications);
+    
+    // Items per page change
+    $('#itemsPerPage').on('change', function() {
+        itemsPerPage = parseInt($(this).val());
+        currentPage = 1;
+        updatePagination();
+    });
+    
+    // Mark as read when clicking on notification
+    $('.notification-item').on('click', function(e) {
+        if (!$(e.target).closest('.dropdown, .btn').length) {
+            const notificationId = $(this).data('id');
+            if ($(this).hasClass('unread')) {
+                markAsRead(notificationId);
+            }
+        }
+    });
+});
+
+function initializePagination() {
+    totalItems = $('.notification-item').length;
+    filteredItems = $('.notification-item').toArray();
+    updatePagination();
+}
+
+function filterNotifications() {
+    const typeFilter = $('#typeFilter').val();
+    const statusFilter = $('#statusFilter').val();
+    
+    // Reset and apply filters
+    filteredItems = $('.notification-item').toArray().filter(item => {
+        const $item = $(item);
+        const typeMatch = !typeFilter || $item.data('type') === typeFilter;
+        const statusMatch = !statusFilter || $item.data('status') === statusFilter;
+        return typeMatch && statusMatch;
+    });
+    
+    totalItems = filteredItems.length;
+    currentPage = 1;
+    updatePagination();
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    
+    // Hide all items first
+    $('.notification-item').hide();
+    
+    // Show items for current page
+    for (let i = startIndex; i < endIndex; i++) {
+        if (filteredItems[i]) {
+            $(filteredItems[i]).show();
+        }
+    }
+    
+    // Update pagination info
+    $('#currentStart').text(totalItems > 0 ? startIndex + 1 : 0);
+    $('#currentEnd').text(endIndex);
+    $('#totalItems').text(totalItems);
+    
+    // Update pagination controls
+    updatePaginationControls(totalPages);
+    
+    // Show/hide pagination section
+    if (totalPages <= 1) {
+        $('#paginationSection').hide();
+    } else {
+        $('#paginationSection').show();
+    }
+}
+
+function updatePaginationControls(totalPages) {
+    const $controls = $('#paginationControls');
+    
+    // Clear existing page numbers
+    $controls.find('.page-number').remove();
+    
+    // Add page numbers
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+    
+    // Adjust range if we're near the beginning or end
+    if (endPage - startPage < 4) {
+        if (startPage === 1) {
+            endPage = Math.min(totalPages, startPage + 4);
+        } else {
+            startPage = Math.max(1, endPage - 4);
+        }
+    }
+    
+    // Add first page and ellipsis if needed
+    if (startPage > 1) {
+        $controls.find('#prevPage').after(`
+            <li class="page-item page-number">
+                <a class="page-link" href="#" onclick="goToPage(1)">1</a>
+            </li>
+        `);
+        if (startPage > 2) {
+            $controls.find('#prevPage').after(`
+                <li class="page-item disabled page-number">
+                    <span class="page-link">...</span>
+                </li>
+            `);
+        }
+    }
+    
+    // Add page numbers
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage ? 'active' : '';
+        $controls.find('#nextPage').before(`
+            <li class="page-item page-number ${isActive}">
+                <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+            </li>
+        `);
+    }
+    
+    // Add last page and ellipsis if needed
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            $controls.find('#nextPage').before(`
+                <li class="page-item disabled page-number">
+                    <span class="page-link">...</span>
+                </li>
+            `);
+        }
+        $controls.find('#nextPage').before(`
+            <li class="page-item page-number">
+                <a class="page-link" href="#" onclick="goToPage(${totalPages})">${totalPages}</a>
+            </li>
+        `);
+    }
+    
+    // Enable/disable prev/next buttons
+    $('#prevPage').toggleClass('disabled', currentPage === 1);
+    $('#nextPage').toggleClass('disabled', currentPage === totalPages || totalPages === 0);
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    updatePagination();
+    
+    // Smooth scroll to top of list
+    $('html, body').animate({
+        scrollTop: $('.notification-list').offset().top - 100
+    }, 300);
+}
+
+function markAsRead(notificationId) {
+    const item = $(`.notification-item[data-id="${notificationId}"]`);
+    item.removeClass('unread').addClass('read');
+    item.attr('data-status', 'read');
+    item.find('.badge-pulse').fadeOut();
+    
+    showToast('Notification marquée comme lue', 'success');
+    updateStats();
+}
+
+function markAsUnread(notificationId) {
+    const item = $(`.notification-item[data-id="${notificationId}"]`);
+    item.removeClass('read').addClass('unread');
+    item.attr('data-status', 'unread');
+    
+    if (!item.find('.badge-pulse').length) {
+        item.find('.notification-title').after('<span class="badge bg-primary badge-pulse ms-2">Nouveau</span>');
+    }
+    
+    showToast('Notification marquée comme non lue', 'info');
+    updateStats();
+}
+
+function deleteNotification(notificationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
+        $(`.notification-item[data-id="${notificationId}"]`).fadeOut(300, function() {
+            $(this).remove();
+            updateStats();
+        });
+        showToast('Notification supprimée', 'success');
+    }
+}
+
+function markAllAsRead() {
+    $('.notification-item.unread').each(function() {
+        const notificationId = $(this).data('id');
+        markAsRead(notificationId);
+    });
+    showToast('Toutes les notifications ont été marquées comme lues', 'success');
+}
+
+function clearAllNotifications() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer toutes les notifications ?')) {
+        $('.notification-item').fadeOut(300, function() {
+            $(this).remove();
+        });
+        
+        setTimeout(() => {
+            $('.notification-list').html(`
+                <div class="text-center py-5">
+                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                </div>
+            `);
+            updateStats();
+        }, 300);
+        
+        showToast('Toutes les notifications ont été supprimées', 'success');
+    }
+}
+
+function updateStats() {
+    const total = $('.notification-item').length;
+    const unread = $('.notification-item.unread').length;
+    
+    $('.esacode-stat-card:first h4').text(total);
+    $('.esacode-stat-card:nth-child(2) h4').text(unread);
+    
+    // Update pagination after stats change
+    initializePagination();
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+
+<style>
+.notification-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.notification-item.unread {
+    border-left: 4px solid var(--esacode-primary) !important;
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.02), rgba(2, 161, 149, 0.05)) !important;
+}
+
+.notification-icon {
+    min-width: 40px;
+}
+
+.icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.icon-wrapper.bg-success {
+    background: var(--esacode-success) !important;
+}
+
+.icon-wrapper.bg-warning {
+    background: var(--esacode-warning) !important;
+}
+
+.icon-wrapper.bg-info {
+    background: var(--esacode-info) !important;
+}
+
+.icon-wrapper.bg-error {
+    background: var(--esacode-danger) !important;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--esacode-gray-800);
+}
+
+.notification-message {
+    color: var(--esacode-gray-600);
+    line-height: 1.5;
+}
+
+.badge-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(2, 161, 149, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0);
+    }
+}
+
+.notification-actions {
+    margin-top: 1rem;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+[data-bs-theme="dark"] .notification-item.unread {
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.1), rgba(2, 161, 149, 0.15)) !important;
+}
+
+[data-bs-theme="dark"] .notification-title {
+    color: var(--esacode-gray-100);
+}
+
+[data-bs-theme="dark"] .notification-message {
+    color: var(--esacode-gray-300);
+}
+</style>
+{% endblock %}
+
+ {% endcomment %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} 
+
+
+
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Notifications - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Notifications</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Notifications</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                            <i class="mdi mdi-check-all"></i> Tout marquer comme lu
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearAllNotifications()">
+                            <i class="mdi mdi-delete-sweep"></i> Tout effacer
+                        </button>
+                        <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ stats.total }}</h4>
+                    <p class="text-muted mb-0">Total notifications</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">{{ stats.unread }}</h4>
+                    <p class="text-muted mb-0">Non lues</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">{{ stats.success }}</h4>
+                    <p class="text-muted mb-0">Succès</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">{{ stats.warning }}</h4>
+                    <p class="text-muted mb-0">Avertissements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Filtrer les notifications</h6>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="typeFilter" style="width: auto;" onchange="applyFilters()">
+                                <option value="" {% if not type_filter %}selected{% endif %}>Tous les types</option>
+                                <option value="success" {% if type_filter == 'success' %}selected{% endif %}>Succès</option>
+                                <option value="warning" {% if type_filter == 'warning' %}selected{% endif %}>Avertissements</option>
+                                <option value="info" {% if type_filter == 'info' %}selected{% endif %}>Informations</option>
+                                <option value="error" {% if type_filter == 'error' %}selected{% endif %}>Erreurs</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;" onchange="applyFilters()">
+                                <option value="" {% if not status_filter %}selected{% endif %}>Toutes</option>
+                                <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>Non lues</option>
+                                <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Lues</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="notification-list">
+                {% for notification in page_obj %}
+                <div class="notification-item card border mb-3 {% if not notification.read %}unread{% endif %}" 
+                     data-type="{{ notification.type }}" 
+                     data-status="{% if notification.read %}read{% else %}unread{% endif %}"
+                     data-id="{{ notification.id }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="notification-icon me-3">
+                                <div class="icon-wrapper bg-{{ notification.type }}">
+                                    <i class="mdi {{ notification.icon }} text-white"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="notification-content flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="notification-title mb-1">{{ notification.title }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if not notification.read %}
+                                            <span class="badge bg-primary badge-pulse">Nouveau</span>
+                                        {% endif %}
+                                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link btn-sm text-muted" data-bs-toggle="dropdown">
+                                                <i class="mdi mdi-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if not notification.read %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsRead({{ notification.id }}); return false;">
+                                                        <i class="mdi mdi-check me-2"></i>Marquer comme lu
+                                                    </a></li>
+                                                {% else %}
+                                                    <li><a class="dropdown-item" href="#" onclick="markAsUnread({{ notification.id }}); return false;">
+                                                        <i class="mdi mdi-email-mark-as-unread me-2"></i>Marquer comme non lu
+                                                    </a></li>
+                                                {% endif %}
+                                                {% if notification.action_url %}
+                                                    <li><a class="dropdown-item" href="{{ notification.action_url }}">
+                                                        <i class="mdi mdi-open-in-new me-2"></i>Voir détails
+                                                    </a></li>
+                                                {% endif %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteNotification({{ notification.id }}); return false;">
+                                                    <i class="mdi mdi-delete me-2"></i>Supprimer
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <p class="notification-message mb-2">{{ notification.message }}</p>
+                                
+                                {% if notification.action_url %}
+                                    <div class="notification-actions">
+                                        <a href="{{ notification.action_url }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="mdi mdi-arrow-right me-1"></i>Voir les détails
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row" id="paginationSection">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    <small class="text-muted">
+                        Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                        sur {{ page_obj.paginator.count }} notifications
+                    </small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="items-per-page">
+                        <select class="form-select form-select-sm" id="itemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                            <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                            <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                            <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 par page</option>
+                        </select>
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                    <i class="mdi mdi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                    <i class="mdi mdi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilters() {
+    const typeFilter = $('#typeFilter').val();
+    const statusFilter = $('#statusFilter').val();
+    const perPage = $('#itemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 1);
+    if (typeFilter) {
+        url.searchParams.set('type', typeFilter);
+    } else {
+        url.searchParams.delete('type');
+    }
+    if (statusFilter) {
+        url.searchParams.set('status', statusFilter);
+    } else {
+        url.searchParams.delete('status');
+    }
+    if (perPage) {
+        url.searchParams.set('per_page', perPage);
+    }
+    window.location.href = url.toString();
+}
+
+function updateItemsPerPage() {
+    const perPage = $('#itemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 1);
+    url.searchParams.set('per_page', perPage);
+    window.location.href = url.toString();
+}
+
+$(document).ready(function() {
+    // Mark as read when clicking on notification
+    $('.notification-item').on('click', function(e) {
+        if (!$(e.target).closest('.dropdown, .btn').length) {
+            const notificationId = $(this).data('id');
+            if ($(this).hasClass('unread')) {
+                markAsRead(notificationId);
+            }
+        }
+    });
+});
+
+function markAsRead(notificationId) {
+    $.ajax({
+        url: `{% url 'api:mark_notification_read' notification_id=0 %}`.replace('0', notificationId),
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const item = $(`.notification-item[data-id="${notificationId}"]`);
+                item.removeClass('unread').addClass('read');
+                item.attr('data-status', 'read');
+                item.find('.badge-pulse').fadeOut();
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage comme lu.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function markAsUnread(notificationId) {
+    $.ajax({
+        url: `{% url 'api:mark_notification_unread' notification_id=0 %}`.replace('0', notificationId),
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const item = $(`.notification-item[data-id="${notificationId}"]`);
+                item.removeClass('read').addClass('unread');
+                item.attr('data-status', 'unread');
+                if (!item.find('.badge-pulse').length) {
+                    item.find('.notification-title').after('<span class="badge bg-primary badge-pulse ms-2">Nouveau</span>');
+                }
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage comme non lu.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function deleteNotification(notificationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
+        $.ajax({
+            url: `{% url 'api:delete_notification' notification_id=0 %}`.replace('0', notificationId),
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $(`.notification-item[data-id="${notificationId}"]`).fadeOut(300, function() {
+                        $(this).remove();
+                        updateStats();
+                        if ($('.notification-item').length === 0) {
+                            $('.notification-list').html(`
+                                <div class="text-center py-5">
+                                    <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                                    <h5 class="text-muted mt-3">Aucune notification</h5>
+                                    <p class="text-muted">Vos notifications apparaîtront ici</p>
+                                </div>
+                            `);
+                        }
+                    });
+                    showToast(response.message, 'success');
+                } else {
+                    showToast(response.message || 'Erreur lors de la suppression.', 'error');
+                }
+            },
+            error: function(xhr) {
+                showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+            }
+        });
+    }
+}
+
+function markAllAsRead() {
+    $.ajax({
+        url: '{% url "api:mark_all_notifications_read" %}',
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('.notification-item.unread').each(function() {
+                    const notificationId = $(this).data('id');
+                    $(this).removeClass('unread').addClass('read');
+                    $(this).attr('data-status', 'read');
+                    $(this).find('.badge-pulse').fadeOut();
+                });
+                showToast(response.message, 'success');
+                updateStats();
+            } else {
+                showToast(response.message || 'Erreur lors du marquage de toutes les notifications.', 'error');
+            }
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+        }
+    });
+}
+
+function clearAllNotifications() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer toutes les notifications ?')) {
+        $.ajax({
+            url: '{% url "api:clear_all_notifications" %}',
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('.notification-item').fadeOut(300, function() {
+                        $('.notification-list').html(`
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-bell-off text-muted" style="font-size: 4rem;"></i>
+                                <h5 class="text-muted mt-3">Aucune notification</h5>
+                                <p class="text-muted">Vos notifications apparaîtront ici</p>
+                            </div>
+                        `);
+                        updateStats();
+                    });
+                    showToast(response.message, 'success');
+                } else {
+                    showToast(response.message || 'Erreur lors de la suppression de toutes les notifications.', 'error');
+                }
+            },
+            error: function(xhr) {
+                showToast(xhr.responseJSON?.message || 'Erreur serveur.', 'error');
+            }
+        });
+    }
+}
+
+function updateStats() {
+    $.ajax({
+        url: '{% url "custom_admin:user_notifications" %}',
+        method: 'GET',
+        data: { stats_only: true },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                $('.esacode-stat-card:first h4').text(response.stats.total);
+                $('.esacode-stat-card:nth-child(2) h4').text(response.stats.unread);
+                $('.esacode-stat-card:nth-child(3) h4').text(response.stats.success);
+                $('.esacode-stat-card:nth-child(4) h4').text(response.stats.warning);
+            } else {
+                showToast('Erreur lors de la mise à jour des statistiques.', 'error');
+            }
+        },
+        error: function() {
+            showToast('Erreur serveur lors de la mise à jour des statistiques.', 'error');
+        }
+    });
+}
+
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
+        stopOnFocus: true,
+    }).showToast();
+}
+</script>
+
+<style>
+.notification-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.notification-item.unread {
+    border-left: 4px solid var(--esacode-primary) !important;
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.02), rgba(2, 161, 149, 0.05)) !important;
+}
+
+.notification-icon {
+    min-width: 40px;
+}
+
+.icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.icon-wrapper.bg-success {
+    background: var(--esacode-success) !important;
+}
+
+.icon-wrapper.bg-warning {
+    background: var(--esacode-warning) !important;
+}
+
+.icon-wrapper.bg-info {
+    background: var(--esacode-info) !important;
+}
+
+.icon-wrapper.bg-error {
+    background: var(--esacode-danger) !important;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--esacode-gray-800);
+}
+
+.notification-message {
+    color: var(--esacode-gray-600);
+    line-height: 1.5;
+}
+
+.badge-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(2, 161, 149, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(2, 161, 149, 0);
+    }
+}
+
+.notification-actions {
+    margin-top: 1rem;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+[data-bs-theme="dark"] .notification-item.unread {
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.1), rgba(2, 161, 149, 0.15)) !important;
+}
+
+[data-bs-theme="dark"] .notification-title {
+    color: var(--esacode-gray-100);
+}
+
+[data-bs-theme="dark"] .notification-message {
+    color: var(--esacode-gray-300);
+}
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+ {% endcomment %}

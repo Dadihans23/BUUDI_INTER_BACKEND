@@ -1,0 +1,418 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Souscriptions - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Souscriptions</h3>
+                        <p class="text-muted mb-0">Gestion des souscriptions API</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control search-input" placeholder="Rechercher..." style="width: 250px;">
+                        <select class="form-control status-filter" style="width: 150px;">
+                            <option value="all">Tous les statuts</option>
+                            <option value="active">Actif</option>
+                            <option value="inactive">Inactif</option>
+                        </select>
+                        <a href="{% url 'custom_admin:subscription_create' %}" class="btn btn-primary">
+                            <i class="mdi mdi-plus"></i> Nouvelle Souscription
+                        </a>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item active">Souscriptions</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="header-title mt-0 mb-0">Souscriptions API</h4>
+                        <div class="bulk-actions" style="display: none;">
+                            <span class="text-muted">
+                                <span class="count">0</span> élément(s) sélectionné(s)
+                            </span>
+                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="bulkDelete()">
+                                <i class="mdi mdi-delete"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- PAGINATION INFO -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                            sur {{ page_obj.paginator.count }} souscriptions
+                        </small>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">
+                                        <input type="checkbox" class="form-check-input select-all">
+                                    </th>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Utilisateur</th>
+                                    <th scope="col">Pack</th>
+                                    <th scope="col">Token API</th>
+                                    <th scope="col">Caractères</th>
+                                    <th scope="col">Statut</th>
+                                    <th scope="col">Date Création</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subscription in page_obj %}
+                                <tr data-id="{{ subscription.id }}">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input row-checkbox" value="{{ subscription.id }}">
+                                    </td>
+                                    <th scope="row">{{ subscription.id }}</th>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <i class="mdi mdi-account text-white"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ subscription.user.email }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if subscription.pack.name == 'Pack Pro' %}badge-warning{% else %}badge-primary{% endif %}">
+                                            {{ subscription.pack.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="token-display hidden" style="max-width: 200px;">
+                                            <span class="token-text">{{ subscription.token }}</span>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                <button class="esacode-icon-btn btn-copy copy-btn" data-copy="{{ subscription.token }}" title="Copier le token">
+                                                    <i class="mdi mdi-content-copy"></i>
+                                                </button>
+                                                <button class="esacode-icon-btn token-toggle" title="Afficher le token">
+                                                    <i class="mdi mdi-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <span class="token-hidden">••••••••••••••••••••••••</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 80px; height: 8px;">
+                                                <div class="progress-bar bg-primary" style="width: {% widthratio subscription.characters_remaining subscription.pack.character_limit 100 %}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ subscription.characters_remaining|floatformat:0 }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if subscription.is_active %}
+                                            <span class="badge badge-success">
+                                                <i class="mdi mdi-check-circle"></i> Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="mdi mdi-close-circle"></i> Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ subscription.created_at|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{% url 'custom_admin:subscription_detail' subscription.id %}" class="action-btn btn-view" title="Voir les détails">
+                                                <i class="mdi mdi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'custom_admin:subscription_edit' subscription.id %}" class="action-btn btn-edit" title="Modifier">
+                                                <i class="mdi mdi-pencil"></i>
+                                            </a>
+                                            <button class="action-btn btn-delete" data-id="{{ subscription.id }}" data-type="subscription" title="Supprimer">
+                                                <i class="mdi mdi-delete"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="mdi mdi-credit-card-off" style="font-size: 3rem; opacity: 0.3;"></i>
+                                            <p class="mt-2">Aucune souscription trouvée</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="items-per-page">
+                                <select class="form-select form-select-sm" id="subscriptionsItemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                                    <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                                    <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                                    <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                                </select>
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for num in page_obj.paginator.page_range %}
+                                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========== SUPPRESSION AJAX (IDENTIQUE AUX AUTRES) ==========
+$(document).on('click', '.btn-delete[data-type="subscription"]', function(e) {
+    e.preventDefault();
+    const id = $(this).data('id');
+    const row = $(this).closest('tr');
+    
+    Swal.fire({
+        title: 'Supprimer la souscription ?',
+        text: "Cette action est irréversible !",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="mdi mdi-delete"></i> Supprimer',
+        cancelButtonText: '<i class="mdi mdi-close"></i> Annuler',
+        buttonsStyling: false,
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-outline-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            deleteItem(id, 'subscription', row);
+        }
+    });
+});
+
+function deleteItem(id, type, row) {
+    const url = `{% url 'custom_admin:subscription_delete' 0 %}`.replace('0', id);
+    
+    $.ajax({
+        url: url,
+        method: 'POST',
+        data: {
+            'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+        },
+        beforeSend: function() {
+            row.addClass('deleting-row');
+        },
+        success: function(data) {
+            if (data.status === 'success') {
+                showToast(data.message, 'success');
+                row.fadeOut(500, function() {
+                    $(this).remove();
+                    updateBulkActions();
+                });
+            } else {
+                showToast(data.message || 'Erreur lors de la suppression', 'error');
+            }
+        },
+        error: function() {
+            showToast('Erreur serveur lors de la suppression', 'error');
+        },
+        complete: function() {
+            row.removeClass('deleting-row');
+        }
+    });
+}
+
+// ========== SUPPRESSION BULK ==========
+function bulkDelete() {
+    const selectedIds = [];
+    $('.row-checkbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+    
+    if (selectedIds.length === 0) {
+        showToast('Aucune souscription sélectionnée', 'warning');
+        return;
+    }
+    
+    Swal.fire({
+        title: `Supprimer ${selectedIds.length} souscription(s) ?`,
+        text: "Cette action est irréversible !",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: `<i class="mdi mdi-delete"></i> Supprimer`,
+        cancelButtonText: `<i class="mdi mdi-close"></i> Annuler`,
+        buttonsStyling: false,
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-outline-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            selectedIds.forEach(id => {
+                const row = $(`tr[data-id="${id}"]`);
+                deleteItem(id, 'subscription', row);
+            });
+            $('.select-all').prop('checked', false);
+            updateBulkActions();
+        }
+    });
+}
+
+// ========== GESTION CHECKBOX ==========
+$('.select-all').on('change', function() {
+    $('.row-checkbox').prop('checked', this.checked);
+    updateBulkActions();
+});
+
+$(document).on('change', '.row-checkbox', function() {
+    updateBulkActions();
+});
+
+function updateBulkActions() {
+    const checkedCount = $('.row-checkbox:checked').length;
+    const totalCount = $('.row-checkbox').length;
+    
+    if (checkedCount > 0) {
+        $('.bulk-actions').show();
+        $('.bulk-actions .count').text(checkedCount);
+    } else {
+        $('.bulk-actions').hide();
+    }
+    
+    if (checkedCount === totalCount) {
+        $('.select-all').prop('checked', true);
+    } else {
+        $('.select-all').prop('checked', false);
+    }
+}
+
+// ========== TOKEN MANAGEMENT ==========
+$(document).on('click', '.token-toggle', function() {
+    const tokenDisplay = $(this).closest('td').find('.token-display');
+    const tokenHidden = $(this).closest('td').find('.token-hidden');
+    
+    if (tokenDisplay.hasClass('hidden')) {
+        tokenDisplay.removeClass('hidden');
+        tokenHidden.hide();
+        $(this).html('<i class="mdi mdi-eye-off"></i>');
+    } else {
+        tokenDisplay.addClass('hidden');
+        tokenHidden.show();
+        $(this).html('<i class="mdi mdi-eye"></i>');
+    }
+});
+
+// ========== COPY TOKEN ==========
+$(document).on('click', '.copy-btn', function() {
+    const token = $(this).data('copy');
+    navigator.clipboard.writeText(token).then(() => {
+        showToast('Token copié dans le presse-papier !', 'success');
+    }).catch(() => {
+        showToast('Erreur lors de la copie', 'error');
+    });
+});
+
+// ========== PAGINATION ==========
+function updateItemsPerPage() {
+    const perPage = $('#subscriptionsItemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', perPage);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+
+// ========== RECHERCHE & FILTRE (optionnel) ==========
+$('.search-input').on('input', function() {
+    const search = $(this).val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('search', search);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+});
+
+$('.status-filter').on('change', function() {
+    const status = $(this).val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('status', status);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+});
+
+// Initialisation
+$(document).ready(function() {
+    updateBulkActions();
+});
+</script>
+
+<style>
+.token-display.hidden { display: none; }
+.token-hidden { cursor: pointer; user-select: none; }
+.deleting-row { opacity: 0.5; }
+.esacode-icon-btn { 
+    width: 24px; 
+    height: 24px; 
+    border: none; 
+    background: none; 
+    color: #6c757d; 
+    cursor: pointer;
+}
+.esacode-icon-btn:hover { color: #495057; }
+.action-btn { 
+    width: 32px; 
+    height: 32px; 
+    border: none; 
+    background: none; 
+    color: #6c757d; 
+    margin-right: 4px;
+}
+.action-btn:hover { color: #495057; background: #f8f9fa; border-radius: 4px; }
+</style>
+{% endblock %}

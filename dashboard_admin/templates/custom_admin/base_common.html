@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light" data-layout="vertical">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>{% block title %}Transfert Admin{% endblock %}</title>
+
+    <link rel="shortcut icon" href="{% static 'custom_admin/images/favicon.ico' %}">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="{% static 'custom_admin/css/plugins/simplebar.min.css' %}">
+    <link href="{% static 'custom_admin/css/icons.css' %}" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/esacode-theme.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <nav class="navbar navbar-expand-lg navbar-default border bg-body-tertiary py-0">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <div class="navbar-header d-lg-none">
+                        <div class="logo-sm">
+                            <a href="javascript:void(0)" id="sidebar-toggle-button"><i class="fa fa-bars"></i></a>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <ul class="nav navbar-nav d-none d-lg-flex mb-2 mb-lg-0">
+                            <li><a href="javascript:void(0)" id="toggle-fullscreen"><i class="mdi mdi-fullscreen"></i></a></li>
+                        </ul>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="dropdown ms-1 user-dropdown header-item">
+                            <a class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle border-0 dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <img src="{% static 'custom_admin/images/avatar/user_logo.png' %}" alt="{{ user.username }}" class="rounded-circle user-avatar" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #0d9488;">
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% block user_dropdown_menu %}
+                                <li><a href="{% url 'custom_admin:settings' %}">Paramètres</a></li>
+                                <li role="separator" class="divider"></li>
+                                {% endblock %}
+                                <li>
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                                        Se déconnecter
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Page Sidebar -->
+    <div class="page-sidebar">
+        <a class='logo-box' href='{% url "custom_admin:dashboard" %}'>
+            <span class="d-flex align-items-center">
+                <span class="fw-bold" style="font-size: 1.2rem; color: #0d9488;">Transfert Admin</span>
+            </span>
+            <i class="mdi mdi-close" id="sidebar-toggle-button-close"></i>
+        </a>
+        <div class="page-sidebar-inner">
+            <div class="page-sidebar-menu simple-bar" data-simplebar="">
+                <ul class="accordion-menu">
+                    <!-- Dashboard -->
+                    <li class="accordion-menu-item">
+                        <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                            <i class="menu-icon mdi mdi-view-dashboard"></i><span>Tableau de bord</span>
+                        </a>
+                    </li>
+
+                    <!-- Utilisateurs -->
+                    <li class="accordion-menu-item has-submenu {% if 'user' in request.path %}opened{% endif %}">
+                        <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
+                            <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+                            <i class="mdi mdi-chevron-down accordion-arrow"></i>
+                        </a>
+                        <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
+                            <li><a href="{% url 'custom_admin:users' %}" class="{% if request.resolver_match.url_name in 'users user_detail user_edit user_create' %}active{% endif %}">Liste des utilisateurs</a></li>
+                            <li><a href="{% url 'custom_admin:user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Ajouter un utilisateur</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Transferts -->        
+                    <li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
+                       <a href="{% url 'custom_admin:transfers' %}" 
+                                    class="{% if request.resolver_match.url_name in 'transfers transfer_detail transfer_edit transfer_delete transfer_retry' %}active{% endif %}">
+                                    
+                                <i class="menu-icon mdi mdi-transfer"></i><span>Tous les transferts</span>
+
+                        </a>
+                    </li>
+
+
+                    <!-- Frais Opérateurs -->
+                    <li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
+                        <a href="{% url 'custom_admin:fees' %}">
+                            <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
+                        </a>
+                    </li>
+
+                    <!-- Analytics Revenus -->
+                    <li class="accordion-menu-item {% if request.resolver_match.url_name == 'revenue_analytics' %}active{% endif %}">
+                        <a href="{% url 'custom_admin:revenue_analytics' %}">
+                            <i class="menu-icon mdi mdi-chart-line"></i><span>Analytics Revenus</span>
+                        </a>
+                    </li>
+
+                    {% comment %} <!-- Paramètres -->
+                    <li class="accordion-menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                        <a href="{% url 'custom_admin:settings' %}">
+                            <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
+                        </a>
+                    </li> {% endcomment %}
+
+                    <!-- Admin Django -->
+                    <li class="accordion-menu-item">
+                        <a href="{% url 'admin:index' %}">
+                            <i class="menu-icon mdi mdi-tune"></i><span>Admin Django</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+        <div class="page-inner">
+            {% block content %}{% endblock %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="page-footer">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <p class="mb-0">&copy; <script>document.write(new Date().getFullYear())</script> Buudi Inter - Transfert d'argent</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="{% static 'custom_admin/js/plugins/jquery.min.js' %}"></script>
+    <script src="{% static 'custom_admin/js/plugins/simplebar.min.js' %}"></script>
+    <script src="{% static 'custom_admin/js/plugins/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'custom_admin/js/custom.js' %}"></script>
+    <script src="{% static 'custom_admin/js/esacode-admin.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+
+    <!-- Modal de suppression -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="mdi mdi-alert-circle me-2"></i> Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="mdi mdi-delete-variant text-danger" style="font-size: 4rem;"></i>
+                    <h6 class="my-3">Êtes-vous sûr de vouloir supprimer cet élément ?</h6>
+                    <p class="text-muted">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="mdi mdi-delete me-1"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de déconnexion -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="mdi mdi-logout me-2"></i> Confirmer la déconnexion
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="mdi mdi-help-circle text-warning" style="font-size: 4rem;"></i>
+                    <h6 class="my-3">Voulez-vous vraiment vous déconnecter ?</h6>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Annuler</button>
+                     <a href="{% url 'custom_admin:logout' %}" class="btn btn-warning">
+                        <i class="mdi mdi-logout me-1"></i> Se déconnecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

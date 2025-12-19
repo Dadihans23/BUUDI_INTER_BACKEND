@@ -5,8 +5,10 @@ from .views import (
     ConfirmDebitView,
     CreditReceiverView,
     FeesConfigView,
-    TransferStatusView
+    TransferStatusView ,
     # launch_credit_from_webhook ,
+    
+    UserTransactionsView
 )
 
 urlpatterns = [
@@ -15,6 +17,8 @@ urlpatterns = [
     path('credit/', CreditReceiverView.as_view()),
     path('fees-config/', FeesConfigView.as_view()),
     path('<int:transfer_id>/status/', TransferStatusView.as_view(), name='transfer-status'),
+    path('my-transactions/', UserTransactionsView.as_view(), name='user-transactions'),
+
 
     
     # path('webhook-paydunya/', paydunya_webhook, name='webhook'),
@@ -23,7 +27,6 @@ urlpatterns = [
 
 
 ]
-
 
 
 

@@ -1,0 +1,54 @@
+{% extends 'custom_admin/base_common.html' %}
+{% load static %}
+
+{% block title %}Modifier {{ user.name }}{% endblock %}
+
+{% block sidebar_menu %}
+<!-- ... même sidebar que user_detail.html ... -->
+<li class="accordion-menu-item has-submenu opened">
+    <a href="#" class="accordion-toggle opened">
+        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" style="display: block;">
+        <li><a href="{% url 'custom_admin:users' %}">Liste des utilisateurs</a></li>
+        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
+    </ul>
+</li>
+<!-- ... reste du menu ... -->
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-6">
+            <div class="card border">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="mdi mdi-pencil"></i> Modifier l'utilisateur</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Nom complet</label>
+                            <input type="text" name="name" value="{{ user.name }}" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="phone" value="{{ user.phone }}" class="form-control" required>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="mdi mdi-content-save"></i> Sauvegarder
+                            </button>
+                            <a href="{% url 'custom_admin:user_detail' user.id %}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

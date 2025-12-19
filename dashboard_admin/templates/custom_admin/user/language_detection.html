@@ -1,0 +1,1171 @@
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Détection de Langues - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Détection de Langues</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_requests' %}">Requêtes</a></li>
+                                <li class="breadcrumb-item active">Détection de langues</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="showDetectionTool()">
+                            <i class="mdi mdi-magnify"></i> Nouvelle détection
+                        </button>
+                        {% comment %} <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a> {% endcomment %}
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </button>
+
+                         <a href= "{% url 'front:pack' %}" class="btn btn-primary">
+                            <i class="mdi mdi-magnify"></i> Souscrire a un pack
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ stats.total_detections }}</h4>
+                    <p class="text-muted mb-0">Total détections</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">{{ stats.total_tokens }}</h4>
+                    <p class="text-muted mb-0">Tokens utilisés</p>
+                </div>
+            </div>
+        </div>
+        {% comment %} <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">{{ stats.avg_confidence }}%</h4>
+                    <p class="text-muted mb-0">Précision moyenne</p>
+                </div>
+            </div>
+        </div> {% endcomment %}
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">{{ stats.unique_languages }}</h4>
+                    <p class="text-muted mb-0">Langues détectées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outil de détection -->
+    <div class="row" id="detection-tool" style="display: none;">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="header-title">
+                            <i class="mdi mdi-magnify text-primary me-2"></i>
+                            Outil de Détection de Langue
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideDetectionTool()">
+                            <i class="mdi mdi-close"></i> Fermer
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Texte à analyser</label>
+                                <textarea class="form-control" id="detectionText" rows="6" 
+                                          placeholder="Collez votre texte ici pour détecter automatiquement la langue..."></textarea>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">
+                                        <span id="detectionCharCount">0</span> caractères • 
+                                    </small>
+                                   
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary" onclick="detectLanguage()">
+                                <i class="mdi mdi-magnify"></i> Détecter la langue
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Résultats de détection</h6>
+                                    <div id="detectionResults">
+                                        <p class="text-muted">Aucune analyse effectuée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des détections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Historique des Détections</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm" id="searchDetections" placeholder="Rechercher..." style="width: 200px;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Texte analysé</th>
+                                    <th>Langues détectées</th>
+                                    <th>Confiance</th>
+                                    <th>Tokens</th>
+                                    <th>Temps</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detection in detections %}
+                                <tr data-id="{{ detection.id }}">
+                                    <td>
+                                        <small class="text-muted">{{ detection.timestamp|date:'d M Y H:i' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ detection.input_text }}">
+                                            {{ detection.input_text }}
+                                        </div>
+                                    </td>
+                                    <td>
+
+                                         <span class="badge bg-primary me-1">
+                                                {{ detection.output_text}}
+                                        </span>
+                                        {% comment %} {% for lang in detection.detected_languages %}
+                                            <span class="badge bg-primary me-1">
+                                                {{ lang.lang }} {{ lang.confidence }}%
+                                            </span>
+                                        {% empty %}
+                                            <span class="badge bg-secondary">Aucune langue</span>
+                                        {% endfor %} {% endcomment %}
+                                    </td>
+                                    <td>
+                                        {% with main_lang=detection.detected_languages.0 %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ main_lang.confidence|default:0 }}%"></div>
+                                                </div>
+                                                <small>{{ main_lang.confidence|default:'N/A' }}%</small>
+                                            </div>
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ detection.character_count }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ detection.response_time }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="viewDetection({{ detection.id }})" title="Voir détails">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="copyDetection('{{ detection.input_text|escapejs }}')" title="Copier texte">
+                                                <i class="mdi mdi-content-copy"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="deleteDetection({{ detection.id }})" title="Supprimer">
+                                                <i class="mdi mdi-delete"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <i class="mdi mdi-magnify-minus text-muted" style="font-size: 3rem;"></i>
+                                        <h6 class="text-muted mt-3">Aucune détection effectuée</h6>
+                                        <p class="text-muted">Utilisez l'outil ci-dessus pour détecter des langues</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails Détection -->
+<div class="modal fade" id="detectionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-magnify me-2"></i>
+                    Détails de la Détection
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Texte analysé</h6>
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div id="modalDetectionText" style="line-height: 1.6;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Langues détectées</h6>
+                        <div id="modalLanguageResults"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Informations</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Tokens utilisés:</td>
+                                <td><span id="modalTokens" class="badge bg-info"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Temps de traitement:</td>
+                                <td><span id="modalResponseTime" class="text-muted"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Date d'analyse:</td>
+                                <td><span id="modalDate" class="text-muted"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-outline-primary" onclick="copyModalDetection()">
+                    <i class="mdi mdi-content-copy me-1"></i> Copier texte
+                </button>
+                {% comment %} <button class="btn btn-primary" onclick="repeatDetection()">
+                    <i class="mdi mdi-refresh me-1"></i> Relancer détection
+                </button> {% endcomment %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+$(document).ready(function() {
+    // Vérifier jQuery, Bootstrap et Toastify
+    if (typeof $ === 'undefined') {
+        console.error("jQuery n'est pas chargé.");
+    }
+    if (typeof $.fn.modal === 'undefined') {
+        console.error("Bootstrap Modal n'est pas chargé.");
+    }
+    if (typeof Toastify === 'undefined') {
+        console.error("Toastify n'est pas chargé.");
+    } else {
+        Toastify({
+            text: "Page de détection de langues chargée !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }
+
+    // Initialiser le compteur de caractères
+    $('#detectionText').on('input', updateDetectionCounts);
+    
+    // Recherche dans la table
+    $('#searchDetections').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        $('tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.includes(searchTerm));
+        });
+    });
+});
+
+function updateDetectionCounts() {
+    const text = $('#detectionText').val();
+    const charCount = text.length;
+    const tokenEstimate = Math.ceil(charCount / 4);
+    
+    $('#detectionCharCount').text(charCount.toLocaleString());
+    $('#detectionTokenEstimate').text(tokenEstimate);
+    $('#detectionCost').text(tokenEstimate);
+}
+
+function showDetectionTool() {
+    $('#detection-tool').slideDown();
+    $('html, body').animate({
+        scrollTop: $('#detection-tool').offset().top - 100
+    }, 500);
+    Toastify({
+        text: "Outil de détection ouvert !",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function hideDetectionTool() {
+    $('#detection-tool').slideUp();
+    Toastify({
+        text: "Outil de détection fermé.",
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#0d9488",
+        stopOnFocus: true,
+    }).showToast();
+}
+
+function detectLanguage() {
+    const text = $('#detectionText').val().trim();
+    if (!text) {
+        Toastify({
+        text: "Veuillez saisir du texte à analyser",
+        duration: 5000,
+        gravity: "top",
+        position: "right",
+        stopOnFocus: true,
+        style: {
+                background: "#dc3545",
+                borderRadius: "10px",
+                fontSize: "18px",
+                padding: "16px 24px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+            }
+        }).showToast();
+        return;
+    }
+
+    // ✅ DÉCLARER la variable token avec const
+    const token = "{{user_token}}" || '{% if request.user.api_token %}{{ request.user.api_token }}{% endif %}';
+    
+    if (!token || token === '') {
+
+        Toastify({
+        text: `Vous devez avoir un abonnement pour profiter de cette fonctionnalité`,
+        duration: 4000,
+        gravity: "top",
+        position: "right",
+        stopOnFocus: true,
+        style: {
+                background: "#dc3545",
+                borderRadius: "10px",
+                fontSize: "18px",
+                padding: "16px 24px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+            }
+        }).showToast();
+
+        setTimeout(() => {
+        window.location.href = "{% url 'front:pack' %}";
+        }, 5000);
+        return;
+    }
+
+    console.log("🔄 Envoi requête API...");
+    console.log("📝 Texte:", text);
+    console.log("🔑 Token:", token ? 'Présent' : 'Manquant');
+
+    $.ajax({
+        url: '{% url "api:detect_language" %}',
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({ 
+            message: text 
+        }),
+        dataType: 'json',
+        success: function(response) {
+            console.log("✅ Réponse API:", response);
+            
+            if (response.status === 'success') {
+                const languageName = response.language_name || 'Inconnue';
+                const languageCode = response.language || 'AUTO';
+                
+                const html = `
+                    <div class="alert alert-success mt-3">
+                        <h5><i class="fas fa-check-circle text-success"></i> Langue détectée !</h5>
+                        <p><strong>${languageName}</strong> <span class="badge bg-primary">${languageCode.toUpperCase()}</span></p>
+                        <small class="text-muted">
+                            Confiance: ${response.confidence || 'N/A'}% | 
+                            Caractères: ${response.characters_used || 0}/${response.total_characters || '∞'}
+                        </small>
+                    </div>
+                `;
+                
+                $('#detectionResults').html(html);
+                 Toastify({
+                    text: `✅ Langue détectée : ${languageName}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: {
+                            background: "#0d9488",
+                            borderRadius: "10px",
+                            fontSize: "18px",
+                            padding: "16px 24px",
+                            boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                        }
+                }).showToast();
+            } else {
+                console.error("❌ Erreur API:", response);
+                  Toastify({
+                    text: `❌ ${response.message || "Erreur de détection"}`,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: {
+                            background: "#dc3545",
+                            borderRadius: "10px",
+                            fontSize: "18px",
+                            padding: "16px 24px",
+                            boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                        }
+                }).showToast();
+
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("❌ Erreur AJAX complète:");
+            console.error("- Status:", status);
+            console.error("- Error:", error);
+            console.error("- Response:", xhr.responseText);
+            console.error("- Status Code:", xhr.status);
+            
+            let errorMsg = "Erreur serveur.";
+            if (xhr.status === 401) {
+                errorMsg = "❌ Token invalide. Redirection...";
+                localStorage.removeItem('api_token');
+                setTimeout(() => {
+                    window.location.href = "{% url 'backend:login_user' %}";
+                }, 1500);
+            } else if (xhr.status === 403) {
+                errorMsg = xhr.responseJSON?.message || "❌ Quota épuisé ou souscription inactive.";
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = `❌ ${xhr.responseJSON.message}`;
+            }
+            Toastify({
+                    text: errorMsg ,
+                    duration: 4000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            
+        }
+    });
+}
+
+function viewDetection(id) {
+    $.ajax({
+        url: '{% url "custom_admin:user_language_detection" %}',
+        method: 'POST',
+        data: {
+            action: 'get_detection',
+            detection_id: id,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.status === 'success') {
+                const data = response.data;
+                $('#modalDetectionText').text(data.input_text || 'Aucun texte disponible');
+                $('#modalTokens').text(data.character_count || '0');
+                $('#modalResponseTime').text(data.response_time || 'N/A');
+                $('#modalDate').text(data.timestamp || 'N/A');
+                
+                // Afficher directement output_text dans la section des langues détectées
+                const langHtml = `
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <strong>${data.output_text || 'Aucune langue détectée'}</strong>
+                        </div>
+                    </div>
+                `;
+                $('#modalLanguageResults').html(langHtml);
+                
+                $('#detectionDetailsModal').modal('show');
+                Toastify({
+                    text: "Détails de la détection chargés !",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#0d9488",
+                    stopOnFocus: true,
+                }).showToast();
+            } else {
+                Toastify({
+                    text: response.error || "Erreur lors du chargement des détails.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Erreur AJAX:", status, error, xhr.responseText);
+            Toastify({
+                text: xhr.responseJSON?.error || "Erreur serveur lors du chargement des détails.",
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#dc3545",
+                stopOnFocus: true,
+            }).showToast();
+        }
+    });
+}
+
+
+
+function copyDetection(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        Toastify({
+            text: "Texte copié dans le presse-papiers !",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#0d9488",
+            stopOnFocus: true,
+        }).showToast();
+    }).catch(err => {
+        console.error("Erreur lors de la copie:", err);
+        Toastify({
+            text: "Erreur lors de la copie du texte.",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545",
+            stopOnFocus: true,
+        }).showToast();
+    });
+}
+
+function copyModalDetection() {
+    const text = $('#modalDetectionText').text();
+    copyDetection(text);
+}
+
+function deleteDetection(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette détection ?')) {
+        $.ajax({
+            url: '{% url "custom_admin:user_language_detection" %}',
+            method: 'POST',
+            data: {
+                action: 'delete_detection',
+                detection_id: id,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $(`tr[data-id="${id}"]`).fadeOut();
+                    Toastify({
+                        text: response.message || "Détection supprimée avec succès !",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#0d9488",
+                        stopOnFocus: true,
+                    }).showToast();
+                } else {
+                    Toastify({
+                        text: response.error || "Erreur lors de la suppression de la détection.",
+                        duration: 3000,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "#dc3545",
+                        stopOnFocus: true,
+                    }).showToast();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur AJAX:", status, error, xhr.responseText);
+                Toastify({
+                    text: xhr.responseJSON?.error || "Erreur serveur lors de la suppression.",
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "#dc3545",
+                    stopOnFocus: true,
+                }).showToast();
+            }
+        });
+    }
+}
+
+function repeatDetection() {
+    const text = $('#modalDetectionText').text();
+    $('#detectionDetailsModal').modal('hide');
+    $('#detectionText').val(text);
+    showDetectionTool();
+    updateDetectionCounts();
+}
+</script>
+
+<style>
+#detection-tool {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.list-group-item {
+    border-left: 3px solid #0d9488 !important;
+    border-radius: 0.25rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.05), rgba(2, 161, 149, 0.1)) !important;
+    transform: scale(1.01) !important;
+    box-shadow: inset 3px 0 0 #0d9488 !important;
+}
+
+.esacode-stat-card {
+    background: white;
+    border-radius: 12px;
+    border-left: 4px solid #0d9488;
+    transition: all 0.3s ease;
+}
+
+.esacode-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% comment %} {% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Détection de Langues - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Détection de Langues</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item">Requests</li>
+                                <li class="breadcrumb-item active">Détection de langues</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="showDetectionTool()">
+                            <i class="mdi mdi-magnify"></i> Nouvelle détection
+                        </button>
+                        <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ detections|length }}</h4>
+                    <p class="text-muted mb-0">Total détections</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">12</h4>
+                    <p class="text-muted mb-0">Tokens utilisés</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">97%</h4>
+                    <p class="text-muted mb-0">Précision moyenne</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">8</h4>
+                    <p class="text-muted mb-0">Langues détectées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outil de détection -->
+    <div class="row" id="detection-tool" style="display: none;">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="header-title">
+                            <i class="mdi mdi-magnify text-primary me-2"></i>
+                            Outil de Détection de Langue
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideDetectionTool()">
+                            <i class="mdi mdi-close"></i> Fermer
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Texte à analyser</label>
+                                <textarea class="form-control" id="detectionText" rows="6" 
+                                          placeholder="Collez votre texte ici pour détecter automatiquement la langue..."></textarea>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted">
+                                        <span id="detectionCharCount">0</span> caractères • 
+                                        <span id="detectionTokenEstimate">0</span> tokens estimés
+                                    </small>
+                                    <small class="text-muted">
+                                        Coût estimé: <span id="detectionCost">0</span> tokens
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary" onclick="detectLanguage()">
+                                <i class="mdi mdi-magnify"></i> Détecter la langue
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Résultats de détection</h6>
+                                    <div id="detectionResults">
+                                        <p class="text-muted">Aucune analyse effectuée</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des détections -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Historique des Détections</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm" id="searchDetections" placeholder="Rechercher..." style="width: 200px;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Texte analysé</th>
+                                    <th>Langues détectées</th>
+                                    <th>Confiance</th>
+                                    <th>Tokens</th>
+                                    <th>Temps</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detection in detections %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">{{ detection.date }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ detection.input }}">
+                                            {{ detection.input }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% for lang in detection.detected_languages %}
+                                            <span class="badge bg-primary me-1">
+                                                {{ lang.lang }} {{ lang.confidence }}%
+                                            </span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% with main_lang=detection.detected_languages.0 %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ main_lang.confidence }}%"></div>
+                                                </div>
+                                                <small>{{ main_lang.confidence }}%</small>
+                                            </div>
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ detection.tokens }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ detection.response_time }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="viewDetection({{ detection.id }})" title="Voir détails">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="copyDetection('{{ detection.input }}')" title="Copier texte">
+                                                <i class="mdi mdi-content-copy"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="deleteDetection({{ detection.id }})" title="Supprimer">
+                                                <i class="mdi mdi-delete"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <i class="mdi mdi-magnify-minus text-muted" style="font-size: 3rem;"></i>
+                                        <h6 class="text-muted mt-3">Aucune détection effectuée</h6>
+                                        <p class="text-muted">Utilisez l'outil ci-dessus pour détecter des langues</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails Détection -->
+<div class="modal fade" id="detectionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-magnify me-2"></i>
+                    Détails de la Détection
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted">Texte analysé</h6>
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div id="modalDetectionText" style="line-height: 1.6;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Langues détectées</h6>
+                        <div id="modalLanguageResults"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Informations</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Tokens utilisés:</td>
+                                <td><span id="modalTokens" class="badge bg-info"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Temps de traitement:</td>
+                                <td><span id="modalResponseTime" class="text-muted"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Date d'analyse:</td>
+                                <td><span id="modalDate" class="text-muted"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-outline-primary" onclick="copyModalDetection()">
+                    <i class="mdi mdi-content-copy me-1"></i> Copier texte
+                </button>
+                <button class="btn btn-primary" onclick="repeatDetection()">
+                    <i class="mdi mdi-refresh me-1"></i> Relancer détection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize character counter
+    $('#detectionText').on('input', updateDetectionCounts);
+    
+    // Search functionality
+    $('#searchDetections').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        $('tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.includes(searchTerm));
+        });
+    });
+});
+
+function updateDetectionCounts() {
+    const text = $('#detectionText').val();
+    const charCount = text.length;
+    const tokenEstimate = Math.ceil(charCount / 4);
+    
+    $('#detectionCharCount').text(charCount.toLocaleString());
+    $('#detectionTokenEstimate').text(tokenEstimate);
+    $('#detectionCost').text(tokenEstimate);
+}
+
+function showDetectionTool() {
+    $('#detection-tool').slideDown();
+    $('html, body').animate({
+        scrollTop: $('#detection-tool').offset().top - 100
+    }, 500);
+}
+
+function hideDetectionTool() {
+    $('#detection-tool').slideUp();
+}
+
+function detectLanguage() {
+    const text = $('#detectionText').val();
+    if (!text.trim()) {
+        showToast('Veuillez saisir du texte à analyser', 'warning');
+        return;
+    }
+    
+    showToast('Analyse en cours...', 'info');
+    
+    // Simulate language detection
+    setTimeout(() => {
+        const results = [
+            { lang: 'Français', code: 'fr', confidence: 92 },
+            { lang: 'Anglais', code: 'en', confidence: 6 },
+            { lang: 'Espagnol', code: 'es', confidence: 2 }
+        ];
+        
+        let html = '<div class="list-group list-group-flush">';
+        results.forEach(result => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${result.lang}</strong>
+                        <small class="text-muted d-block">${result.code.toUpperCase()}</small>
+                    </div>
+                    <span class="badge bg-primary">${result.confidence}%</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        $('#detectionResults').html(html);
+        showToast('Analyse terminée !', 'success');
+        
+        // Save detection (simulate)
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    }, 1500);
+}
+
+function viewDetection(id) {
+    // Simulate loading detection data
+    const sampleData = {
+        text: 'Hello world, comment allez-vous? Je suis très heureux de vous rencontrer.',
+        languages: [
+            { lang: 'Anglais', code: 'en', confidence: 60 },
+            { lang: 'Français', code: 'fr', confidence: 40 }
+        ],
+        tokens: 5,
+        responseTime: '0.3s',
+        date: 'Aujourd\'hui 14:30'
+    };
+    
+    $('#modalDetectionText').text(sampleData.text);
+    $('#modalTokens').text(sampleData.tokens);
+    $('#modalResponseTime').text(sampleData.responseTime);
+    $('#modalDate').text(sampleData.date);
+    
+    let langHtml = '<div class="list-group list-group-flush">';
+    sampleData.languages.forEach(lang => {
+        langHtml += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${lang.lang}</strong>
+                    <small class="text-muted d-block">${lang.code.toUpperCase()}</small>
+                </div>
+                <span class="badge bg-primary">${lang.confidence}%</span>
+            </div>
+        `;
+    });
+    langHtml += '</div>';
+    $('#modalLanguageResults').html(langHtml);
+    
+    $('#detectionDetailsModal').modal('show');
+}
+
+function copyDetection(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Texte copié !', 'success');
+    });
+}
+
+function copyModalDetection() {
+    const text = $('#modalDetectionText').text();
+    copyDetection(text);
+}
+
+function deleteDetection(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette détection ?')) {
+        showToast('Détection supprimée', 'success');
+        $(`tr:has(button[onclick*="${id}"])`).fadeOut();
+    }
+}
+
+function repeatDetection() {
+    const text = $('#modalDetectionText').text();
+    $('#detectionDetailsModal').modal('hide');
+    $('#detectionText').val(text);
+    showDetectionTool();
+    updateDetectionCounts();
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+
+<style>
+#detection-tool {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.list-group-item {
+    border-left: 3px solid var(--esacode-primary) !important;
+    border-radius: var(--esacode-radius-sm) !important;
+    margin-bottom: var(--esacode-space-xs) !important;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(2, 161, 149, 0.05), rgba(2, 161, 149, 0.1)) !important;
+    transform: scale(1.01) !important;
+    box-shadow: inset 3px 0 0 var(--esacode-primary) !important;
+}
+</style>
+{% endblock %} {% endcomment %}

@@ -14,6 +14,13 @@ from threading import Thread
 import requests
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from users.models import UserProfile
+from .models import Transfer
+from .serializers import TransferSerializer  # Import the new serializer
+
+
 
 logger = logging.getLogger('buudi')
 if not logger.handlers:
@@ -68,9 +75,10 @@ class InitiateTransferView(APIView):
             return Response({"error": "Frais non configurés"}, status=500)
 
         OUR_MARGIN = Decimal('1.5')
+        our_fee_percent = from_fee.our_fee_percent
         payin = (amount * from_fee.payin_fee_percent / 100).quantize(Decimal('0.01'))
         payout = (amount * to_fee.payout_fee_percent / 100).quantize(Decimal('0.01'))
-        our_fee = (amount * OUR_MARGIN / 100).quantize(Decimal('0.01'))
+        our_fee = (amount * our_fee_percent / 100).quantize(Decimal('0.01'))
         total = (amount + payin + payout + our_fee).quantize(Decimal('0.01'))
 
         transfer = Transfer.objects.create(
@@ -81,7 +89,7 @@ class InitiateTransferView(APIView):
             to_phone=data['to_phone'],
             amount_requested=amount,
             amount_sent=amount,
-            our_fee_percent=OUR_MARGIN,
+            our_fee_percent=our_fee_percent,
             our_fee_amount=our_fee,
             payin_fee_amount=payin,
             payout_fee_amount=payout,
@@ -427,3 +435,31 @@ class CreditReceiverView(APIView):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+class UserTransactionsView(APIView):
+    def get(self, request):
+        phone = request.headers.get('X-User-Phone')
+        if not phone:
+            return Response({"error": "X-User-Phone requis"}, status=400)
+
+        try:
+            user = UserProfile.objects.get(phone=phone)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Utilisateur inconnu"}, status=404)
+
+        # Get all transactions for the user, ordered by recent first
+        transfers = Transfer.objects.filter(user=user).order_by('-created_at')
+
+        # Serialize and return
+        serializer = TransferSerializer(transfers, many=True)
+        return Response(serializer.data)

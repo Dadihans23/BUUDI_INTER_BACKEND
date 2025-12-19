@@ -1,0 +1,19 @@
+Bonjour {{ user.get_full_name|default:user.username }},
+
+Merci pour votre confiance !
+
+Voici votre facture Esacode pour la période {{ invoice.period }}.
+
+Numéro de facture : {{ invoice.invoice_id }}
+Date : {{ invoice.created_at|date:"d/m/Y" }}
+Montant : {{ invoice.amount }}€ TTC
+Pack : {{ invoice.pack.name }}
+Statut : {{ invoice.get_status_display }}
+
+Vous trouverez votre facture en pièce jointe.
+
+Si vous avez des questions, contactez-nous à contact@esacode.fr
+
+Cordialement,
+L'équipe Esacode
+https://esacode.org

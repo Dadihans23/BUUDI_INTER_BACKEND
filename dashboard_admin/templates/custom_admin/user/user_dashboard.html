@@ -1,0 +1,763 @@
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Mon Dashboard - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Bonjour, {{ user.first_name|default:user.username }} 👋</h3>
+                        <p class="text-muted mb-0">Gérez votre compte et suivez votre utilisation</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="showUserProfile()">
+                            <i class="mdi mdi-account-edit"></i> Mon Profil
+                        </button>
+                        <a href="#" class="btn btn-primary">
+                            <i class="mdi mdi-api"></i> Documentation API
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Stats Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="text-primary mb-0">{{ user_data.tokens_remaining|default:"8,750" }}</h4>
+                            <p class="text-muted mb-0">Tokens restants</p>
+                        </div>
+                        <div class="widget-icon bg-primary-light rounded">
+                            <i class="mdi mdi-coin text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: {{ user_data.tokens_percentage|default:87 }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ user_data.tokens_used|default:"1,250" }} tokens utilisés</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="text-success mb-0">{{ user_data.api_calls_count|default:156 }}</h4>
+                            <p class="text-muted mb-0">Appels API ce mois</p>
+                        </div>
+                        <div class="widget-icon bg-success-light rounded">
+                            <i class="mdi mdi-api text-success" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Dernière utilisation: {{ user_data.last_api_call|default:"Il y a 2h" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="text-info mb-0">{{ user_data.subscription_days_left|default:22 }}</h4>
+                            <p class="text-muted mb-0">Jours restants</p>
+                        </div>
+                        <div class="widget-icon bg-info-light rounded">
+                            <i class="mdi mdi-calendar-clock text-info" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Expire le: {{ user_data.expiration_date|default:"25 Sept 2024" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="text-warning mb-0">${{ user_data.total_spent|default:"89.97" }}</h4>
+                            <p class="text-muted mb-0">Total dépensé</p>
+                        </div>
+                        <div class="widget-icon bg-warning-light rounded">
+                            <i class="mdi mdi-currency-usd text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Pack actuel: {{ user_data.current_pack.name|default:"Pack Pro" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mes Requêtes Récentes (toute la ligne) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Mes Requêtes Récentes</h5>
+                        <a href="{% url 'custom_admin:user_requests' %}" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Tokens</th>
+                                    <th>Statut</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">Aujourd'hui 14:30</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">TTS</span></td>
+                                    <td>45</td>
+                                    <td><span class="badge bg-success">Succès</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(1)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">Hier 16:22</small>
+                                    </td>
+                                    <td><span class="badge bg-info">Traduction</span></td>
+                                    <td>120</td>
+                                    <td><span class="badge bg-success">Succès</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(2)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">Hier 10:15</small>
+                                    </td>
+                                    <td><span class="badge bg-warning">Détection</span></td>
+                                    <td>5</td>
+                                    <td><span class="badge bg-success">Succès</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(3)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">27 Août 09:33</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">TTS</span></td>
+                                    <td>78</td>
+                                    <td><span class="badge bg-danger">Erreur</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(4)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">26 Août 14:45</small>
+                                    </td>
+                                    <td><span class="badge bg-info">Traduction</span></td>
+                                    <td>92</td>
+                                    <td><span class="badge bg-success">Succès</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" onclick="viewRequestDetails(5)">
+                                            <i class="mdi mdi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination for Recent Requests -->
+                    <div class="mt-3" id="requestsPaginationSection">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="pagination-info">
+                                <small class="text-muted">
+                                    Affichage de <span id="requestsCurrentStart">1</span> à <span id="requestsCurrentEnd">5</span> 
+                                    sur <span id="requestsTotalItems">0</span> requêtes
+                                </small>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
+                                <div class="items-per-page">
+                                    <select class="form-select form-select-sm" id="requestsItemsPerPage" style="width: auto;">
+                                        <option value="5" selected>5 par page</option>
+                                        <option value="10">10 par page</option>
+                                        <option value="15">15 par page</option>
+                                    </select>
+                                </div>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="requestsPaginationControls">
+                                        <li class="page-item" id="requestsPrevPage">
+                                            <a class="page-link" href="#" onclick="goToRequestsPage(requestsCurrentPage - 1)">
+                                                <i class="mdi mdi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item" id="requestsNextPage">
+                                            <a class="page-link" href="#" onclick="goToRequestsPage(requestsCurrentPage + 1)">
+                                                <i class="mdi mdi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pack Actuel et Clé API sur la même ligne -->
+    <div class="row">
+        <!-- Mon Pack Actuel -->
+        <div class="col-xl-6">
+            <div class="card border-primary dashboard-card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="mdi mdi-package-variant me-2"></i>Mon Pack Actuel
+                    </h5>
+                    <button class="btn btn-sm btn-light">Changer de pack</button>
+                </div>
+                <div class="card-body">
+                    <div class="text-center p-3 bg-light rounded mb-3">
+                        <div class="mb-3">
+                            <h3 class="text-primary">{{ user_data.current_pack.name|default:"Pack Pro" }}</h3>
+                            <p class="text-muted h5">${{ user_data.current_pack.price|default:"29.99" }}/mois</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="progress mb-2" style="height: 10px;">
+                                <div class="progress-bar bg-primary" style="width: {{ user_data.tokens_percentage|default:87 }}%"></div>
+                            </div>
+                            <small class="text-dark fw-bold">
+                                {{ user_data.tokens_remaining|default:"8,750" }} / {{ user_data.current_pack.token_limit|default:"10,000" }} tokens restants
+                            </small>
+                        </div>
+
+                        <div class="row text-start">
+                            <div class="col-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="mdi mdi-check text-success me-2"></i>
+                                        <strong>Text-to-Speech</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="mdi mdi-check text-success me-2"></i>
+                                        <strong>Traduction</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">
+                                        <i class="mdi mdi-check text-success me-2"></i>
+                                        <strong>Détection langue</strong>
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="mdi mdi-clock text-warning me-2"></i>
+                                        <strong>Clone vocal (à venir)</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <small class="text-dark fw-bold">
+                                Renouvellement automatique le {{ user_data.next_billing|default:"25 Sept 2024" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ma Clé API -->
+        <div class="col-xl-6">
+            <div class="card border-success dashboard-card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="mdi mdi-key me-2"></i>Ma Clé API
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control font-monospace bg-light border-2" id="apiKeyField" 
+                               value="{{ user_data.api_key|default:'sk-usr-abc123def456ghi789jkl012' }}" readonly>
+                        <button class="btn btn-outline-secondary copy-btn" onclick="copyApiKey()">
+                            <i class="mdi mdi-content-copy"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="toggleApiKeyVisibility()">
+                            <i class="mdi mdi-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning btn-sm fw-bold" onclick="regenerateApiKey()">
+                            <i class="mdi mdi-refresh me-2"></i> Régénérer la clé
+                        </button>
+                        <a href="#" class="btn btn-info btn-sm fw-bold">
+                            <i class="mdi mdi-book-open me-2"></i> Documentation API
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques d'utilisation -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Utilisation des 7 derniers jours</h5>
+                    <div id="usageChart" style="height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Profil Utilisateur -->
+<div class="modal fade" id="userProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="mdi mdi-account-circle me-2"></i>
+                    <span>Mon Profil</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="mb-3">
+                            <img src="{% static 'custom_admin/images/avatar/avatar-1.png' %}" 
+                                 class="rounded-circle img-fluid" style="width: 120px; height: 120px;">
+                        </div>
+                        <h5>{{ user.first_name|default:user.username }} {{ user.last_name|default:"" }}</h5>
+                        <p class="text-muted">{{ user.email }}</p>
+                    </div>
+                    <div class="col-md-8">
+                        <form>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" value="{{ user.first_name|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Nom</label>
+                                        <input type="text" class="form-control" value="{{ user.last_name|default:'' }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Nom d'utilisateur</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Date d'inscription</label>
+                                <input type="text" class="form-control" value="{{ user.date_joined|date:'d M Y' }}" readonly>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close me-1"></i> Fermer
+                </button>
+                <button type="button" class="btn btn-primary">
+                    <i class="mdi mdi-content-save me-1"></i> Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails Requête -->
+<div class="modal fade" id="requestDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-info text-white">
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="mdi mdi-information me-2"></i>
+                    <span>Détails de la Requête</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="requestDetailsContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close me-1"></i> Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+// Recent requests pagination variables
+let requestsCurrentPage = 1;
+let requestsItemsPerPage = 5;
+let requestsTotalItems = 0;
+let requestsFilteredItems = [];
+
+$(document).ready(function() {
+    // Initialize requests pagination
+    initializeRequestsPagination();
+    
+    // Items per page change for requests
+    $('#requestsItemsPerPage').on('change', function() {
+        requestsItemsPerPage = parseInt($(this).val());
+        requestsCurrentPage = 1;
+        updateRequestsPagination();
+    });
+    
+    // Initialize usage chart
+    var usageOptions = {
+        series: [{
+            name: 'TTS',
+            data: [45, 52, 38, 67, 19, 43, 67]
+        }, {
+            name: 'Traduction',
+            data: [23, 31, 45, 32, 67, 51, 89]
+        }, {
+            name: 'Détection',
+            data: [5, 8, 12, 7, 15, 9, 18]
+        }],
+        chart: {
+            type: 'area',
+            height: 250,
+            stacked: true,
+            zoom: { enabled: false },
+            toolbar: { show: false }
+        },
+        colors: ['#02A195', '#0EA5E9', '#F59E0B'],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.6,
+                opacityTo: 0.1,
+            }
+        },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        xaxis: {
+            categories: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+        },
+        yaxis: {
+            title: { text: 'Tokens utilisés' }
+        },
+        legend: { position: 'top' },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " tokens"
+                }
+            }
+        }
+    };
+
+    var usageChart = new ApexCharts(document.querySelector("#usageChart"), usageOptions);
+    usageChart.render();
+
+    // Hide API key initially
+    hideApiKey();
+});
+
+function initializeRequestsPagination() {
+    requestsTotalItems = $('.table-hover tbody tr').length;
+    requestsFilteredItems = $('.table-hover tbody tr').toArray();
+    updateRequestsPagination();
+}
+
+function updateRequestsPagination() {
+    const totalPages = Math.ceil(requestsTotalItems / requestsItemsPerPage);
+    const startIndex = (requestsCurrentPage - 1) * requestsItemsPerPage;
+    const endIndex = Math.min(startIndex + requestsItemsPerPage, requestsTotalItems);
+    
+    // Hide all rows first
+    $('.table-hover tbody tr').hide();
+    
+    // Show rows for current page
+    for (let i = startIndex; i < endIndex; i++) {
+        if (requestsFilteredItems[i]) {
+            $(requestsFilteredItems[i]).show();
+        }
+    }
+    
+    // Update pagination info
+    $('#requestsCurrentStart').text(requestsTotalItems > 0 ? startIndex + 1 : 0);
+    $('#requestsCurrentEnd').text(endIndex);
+    $('#requestsTotalItems').text(requestsTotalItems);
+    
+    // Update pagination controls
+    updateRequestsPaginationControls(totalPages);
+    
+    // Show/hide pagination section
+    if (totalPages <= 1) {
+        $('#requestsPaginationSection').hide();
+    } else {
+        $('#requestsPaginationSection').show();
+    }
+}
+
+function updateRequestsPaginationControls(totalPages) {
+    const $controls = $('#requestsPaginationControls');
+    
+    // Clear existing page numbers
+    $controls.find('.requests-page-number').remove();
+    
+    // Add page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = i === requestsCurrentPage ? 'active' : '';
+        $controls.find('#requestsNextPage').before(`
+            <li class="page-item requests-page-number ${isActive}">
+                <a class="page-link" href="#" onclick="goToRequestsPage(${i})">${i}</a>
+            </li>
+        `);
+    }
+    
+    // Enable/disable prev/next buttons
+    $('#requestsPrevPage').toggleClass('disabled', requestsCurrentPage === 1);
+    $('#requestsNextPage').toggleClass('disabled', requestsCurrentPage === totalPages || totalPages === 0);
+}
+
+function goToRequestsPage(page) {
+    const totalPages = Math.ceil(requestsTotalItems / requestsItemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    requestsCurrentPage = page;
+    updateRequestsPagination();
+    
+    // Smooth scroll to table
+    $('html, body').animate({
+        scrollTop: $('.table-responsive').offset().top - 100
+    }, 300);
+}
+
+function showUserProfile() {
+    $('#userProfileModal').modal('show');
+}
+
+function copyApiKey() {
+    const apiKeyField = document.getElementById('apiKeyField');
+    apiKeyField.select();
+    document.execCommand('copy');
+    
+    // Show success message
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast('Clé API copiée !', 'success');
+    } else {
+        alert('Clé API copiée !');
+    }
+}
+
+function toggleApiKeyVisibility() {
+    const apiKeyField = document.getElementById('apiKeyField');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (apiKeyField.type === 'password') {
+        apiKeyField.type = 'text';
+        eyeIcon.className = 'mdi mdi-eye-off';
+    } else {
+        apiKeyField.type = 'password';
+        eyeIcon.className = 'mdi mdi-eye';
+    }
+}
+
+function hideApiKey() {
+    const apiKeyField = document.getElementById('apiKeyField');
+    apiKeyField.type = 'password';
+}
+
+function regenerateApiKey() {
+    if (confirm('Êtes-vous sûr de vouloir régénérer votre clé API ? L\'ancienne clé sera invalidée.')) {
+        // Simulate API key regeneration
+        const newKey = 'sk-usr-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        document.getElementById('apiKeyField').value = newKey;
+        
+        if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+            window.EsacodeAdmin.showToast('Nouvelle clé API générée !', 'success');
+        } else {
+            alert('Nouvelle clé API générée !');
+        }
+    }
+}
+
+function viewRequestDetails(requestId) {
+    // Simulate request details
+    const requestDetails = {
+        1: {
+            id: 1,
+            date: 'Aujourd\'hui 14:30',
+            type: 'TTS',
+            tokens: 45,
+            status: 'Succès',
+            input: 'Bonjour, ceci est un test de synthèse vocale.',
+            output: 'https://api.esacode.org/audio/sample_1.mp3',
+            language: 'Français (fr)',
+            voice: 'Claire - Féminine',
+            response_time: '1.2s'
+        },
+        2: {
+            id: 2,
+            date: 'Hier 16:22',
+            type: 'Traduction',
+            tokens: 120,
+            status: 'Succès',
+            input: 'Hello, this is a translation test.',
+            output: 'Bonjour, ceci est un test de traduction.',
+            language: 'Anglais → Français',
+            response_time: '0.8s'
+        }
+        // Ajouter plus de détails selon les besoins
+    };
+    
+    const details = requestDetails[requestId] || requestDetails[1];
+    
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">Informations Générales</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>ID:</strong></td><td>#${details.id}</td></tr>
+                    <tr><td><strong>Date:</strong></td><td>${details.date}</td></tr>
+                    <tr><td><strong>Type:</strong></td><td><span class="badge bg-primary">${details.type}</span></td></tr>
+                    <tr><td><strong>Tokens:</strong></td><td>${details.tokens}</td></tr>
+                    <tr><td><strong>Statut:</strong></td><td><span class="badge bg-success">${details.status}</span></td></tr>
+                    <tr><td><strong>Temps:</strong></td><td>${details.response_time}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-primary">Détails Techniques</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Langue:</strong></td><td>${details.language}</td></tr>
+                    ${details.voice ? '<tr><td><strong>Voix:</strong></td><td>' + details.voice + '</td></tr>' : ''}
+                </table>
+            </div>
+        </div>
+        <div class="mt-3">
+            <h6 class="text-primary">Contenu</h6>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6>Entrée:</h6>
+                    <p class="mb-2"><code>${details.input}</code></p>
+                    <h6>Sortie:</h6>
+                    <p class="mb-0">
+                        ${details.type === 'TTS' ? 
+                            '<audio controls class="w-100"><source src="' + details.output + '" type="audio/mpeg"></audio>' : 
+                            '<code>' + details.output + '</code>'
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('requestDetailsContent').innerHTML = content;
+    $('#requestDetailsModal').modal('show');
+}
+
+</script>
+
+<style>
+.esacode-stat-card {
+    background: white;
+    border-radius: 12px;
+    border-left: 4px solid var(--esacode-primary);
+    transition: all 0.3s ease;
+}
+
+.esacode-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.widget-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+}
+
+.bg-primary-light {
+    background-color: rgba(2, 161, 149, 0.1) !important;
+}
+
+.bg-success-light {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.bg-info-light {
+    background-color: rgba(14, 165, 233, 0.1) !important;
+}
+
+.bg-warning-light {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+.font-monospace {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(2, 161, 149, 0.05) !important;
+}
+</style>
+{% endblock %}

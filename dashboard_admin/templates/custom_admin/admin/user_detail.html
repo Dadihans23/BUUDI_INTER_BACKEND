@@ -1,0 +1,105 @@
+{% extends 'custom_admin/base_common.html' %}
+{% load static %}
+
+{% block title %}{{ user.name }} - Utilisateur{% endblock %}
+
+{% block sidebar_menu %}
+<!-- ... même sidebar que users.html, mais "Utilisateurs" ouvert et actif sur détail ... -->
+<li class="accordion-menu-item has-submenu opened">
+    <a href="#" class="accordion-toggle opened">
+        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" style="display: block;">
+        <li><a href="{% url 'custom_admin:users' %}">Liste des utilisateurs</a></li>
+        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
+    </ul>
+</li>
+<!-- ... reste du menu identique ... -->
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">{{ user.name }}</h2>
+                        <p class="text-muted mb-0">{{ user.phone }} • Inscrit le {{ user.created_at|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:user_edit' user.id %}" class="btn btn-warning">
+                            <i class="mdi mdi-pencil"></i> Modifier
+                        </a>
+                        <a href="{% url 'custom_admin:users' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4">
+            <div class="card border">
+                <div class="card-body text-center">
+                    <div class="avatar-xl mx-auto mb-4">
+                        <div class="avatar-title bg-soft-primary text-primary rounded-circle fs-1">
+                            {{ user.name|slice:":1"|upper }}
+                        </div>
+                    </div>
+                    <h4>{{ user.name }}</h4>
+                    <p class="text-muted fs-5">{{ user.phone }}</p>
+                    <hr>
+                    <p><strong>ID :</strong> #{{ user.id }}</p>
+                    <p><strong>Inscrit le :</strong> {{ user.created_at|date:"d/m/Y à H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card border">
+                <div class="card-header">
+                    <h5>Derniers transferts ({{ transfers.count }})</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>De → Vers</th>
+                                    <th>Montant</th>
+                                    <th>Statut</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in transfers %}
+                                <tr>
+                                    <td><a href="{% url 'custom_admin:transfer_detail' t.id %}">#{{ t.id }}</a></td>
+                                    <td>{{ t.from_wallet|upper }} → {{ t.to_wallet|upper }}</td>
+                                    <td>{{ t.amount_requested|floatformat:0 }} FCFA</td>
+                                    <td>
+                                        <span class="badge {% if t.status == 'success' %}bg-success{% elif t.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ t.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ t.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">Aucun transfert</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

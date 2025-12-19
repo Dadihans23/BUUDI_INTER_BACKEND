@@ -1,0 +1,302 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Gestion Requests - Esacode Admin{% endblock %}
+
+{% block extra_css %}
+<link type="text/css" href="{% static 'custom_admin/css/plugins/apexcharts.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<!-- Page Heading -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="breadcrumb-header fw-bold mb-2">📊 Gestion des Requests</h2>
+                        <p class="text-muted mb-0">
+                            Monitoring et analyse des requêtes API
+                            {% if request_type != 'all' %}
+                                - Filtre: {{ request_type|title }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="mdi mdi-filter"></i> Filtrer
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item {% if request_type == 'all' %}active{% endif %}" href="?type=all">Toutes les requests</a></li>
+                                <li><a class="dropdown-item {% if request_type == 'tts' %}active{% endif %}" href="?type=tts">TTS uniquement</a></li>
+                                <li><a class="dropdown-item {% if request_type == 'translation' %}active{% endif %}" href="?type=translation">Traductions</a></li>
+                                <li><a class="dropdown-item {% if request_type == 'detection' %}active{% endif %}" href="?type=detection">Détections</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="mdi mdi-printer"></i> Imprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body widget-desk">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mt-0 mb-1 fw-bold text-primary">{{ stats.total_requests }}</h4>
+                            <p class="text-muted mb-0">Total Requests</p>
+                        </div>
+                        <div class="widget-icon">
+                            <i class="mdi mdi-chart-line text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body widget-desk">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mt-0 mb-1 fw-bold text-success">{{ stats.success_rate|floatformat:1 }}%</h4>
+                            <p class="text-muted mb-0">Taux de Succès</p>
+                        </div>
+                        <div class="widget-icon">
+                            <i class="mdi mdi-check-circle text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body widget-desk">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mt-0 mb-1 fw-bold text-info">{{ stats.total_characters|default:0 }}</h4>
+                            <p class="text-muted mb-0">Caractères Utilisés</p>
+                        </div>
+                        <div class="widget-icon">
+                            <i class="mdi mdi-coin text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body widget-desk">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mt-0 mb-1 fw-bold text-warning">{{ stats.avg_response_time }}</h4>
+                            <p class="text-muted mb-0">Temps Moyen</p>
+                        </div>
+                        <div class="widget-icon">
+                            <i class="mdi mdi-clock text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <!-- PAGINATION INFO -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                            sur {{ page_obj.paginator.count }} requêtes
+                        </small>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Utilisateur</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Statut</th>
+                                    <th scope="col">Caractères</th>
+                                    <th scope="col">Temps</th>
+                                    <th scope="col">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for api_call in page_obj %}
+                                <tr>
+                                    <th scope="row">#{{ api_call.id }}</th>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-xs bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <i class="mdi mdi-account text-white"></i>
+                                            </div>
+                                            {{ api_call.subscription.user.email }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if api_call.request_type == 'TTS' %}
+                                            <span class="badge bg-primary">
+                                                <i class="mdi mdi-volume-voice"></i> TTS
+                                            </span>
+                                        {% elif api_call.request_type == 'TRADUCTION' %}
+                                            <span class="badge bg-info">
+                                                <i class="mdi mdi-translate"></i> Traduction
+                                            </span>
+                                        {% elif api_call.request_type == 'DETECTION' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="mdi mdi-language"></i> Détection
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if api_call.status == 'success' %}
+                                            <span class="badge bg-success">
+                                                <i class="mdi mdi-check"></i> Succès
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="mdi mdi-close"></i> Erreur
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ api_call.character_count }}</strong> chars
+                                    </td>
+                                    <td>
+                                        {% if api_call.response_time %}
+                                            <small class="text-muted">{{ api_call.response_time|floatformat:1 }}s</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ api_call.timestamp|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    {% comment %} <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn btn-view" onclick="showRequestDetails({{ api_call.id }})" title="Voir détails">
+                                                <i class="mdi mdi-eye"></i>
+                                            </button>
+                                            <button class="action-btn btn-edit" onclick="showRequestInput({{ api_call.id }})" title="Voir input">
+                                                <i class="mdi mdi-file-document"></i>
+                                            </button>
+                                        </div>
+                                    </td> {% endcomment %}
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="mdi mdi-database-search" style="font-size: 3rem; opacity: 0.3;"></i>
+                                            <p class="mt-2">Aucune requête trouvée pour ce filtre</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="items-per-page">
+                                <select class="form-select form-select-sm" id="requestsItemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                                    <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                                    <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                                    <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                                </select>
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}{% if request_type != 'all' %}&type={{ request_type }}{% endif %}">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for num in page_obj.paginator.page_range %}
+                                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}{% if request_type != 'all' %}&type={{ request_type }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}{% if request_type != 'all' %}&type={{ request_type }}{% endif %}">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DÉTAILS -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails Request <span id="modalRequestId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenu dynamique -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// PAGINATION
+function updateItemsPerPage() {
+    const perPage = $('#requestsItemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', perPage);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+
+// DÉTAILS REQUEST
+function showRequestDetails(requestId) {
+    $.get("{% url 'custom_admin:request_detail' 0 %}".replace('0', requestId))
+    .done(function(data) {
+        $('#modalRequestId').text(`#${requestId}`);
+        $('#modalBody').html(data);
+        $('#detailsModal').modal('show');
+    });
+}
+
+function showRequestInput(requestId) {
+    $.get("{% url 'custom_admin:request_input' 0 %}".replace('0', requestId))
+    .done(function(data) {
+        $('#modalRequestId').text(`#${requestId}`);
+        $('#modalBody').html(data);
+        $('#detailsModal').modal('show');
+    });
+}
+</script>
+{% endblock %}

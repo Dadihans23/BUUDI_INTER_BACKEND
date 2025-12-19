@@ -1,0 +1,501 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Article {{ post.title }} - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Article "{{ post.title }}"</h3>
+                        <p class="text-muted mb-0">Détails et statistiques de l'article</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:post_edit' post.id %}" class="btn btn-primary">
+                            <i class="mdi mdi-pencil"></i> Modifier
+                        </a>
+                        {% comment %} <button class="btn btn-outline-success" onclick="publishPost({{ post.id }})">
+                            <i class="mdi mdi-publish"></i> Publier
+                        </button>
+                        <button class="btn btn-outline-info" onclick="previewPost({{ post.id }})">
+                            <i class="mdi mdi-eye"></i> Aperçu
+                        </button> {% endcomment %}
+                        <button class="btn btn-outline-danger" onclick="deletePost({{ post.id }})">
+                            <i class="mdi mdi-delete"></i> Supprimer
+                        </button>
+                        <a href="{% url 'custom_admin:posts' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Article Overview -->
+        <div class="col-xl-4">
+            <div class="card border">
+                <div class="card-body">
+                    {% if post.featured_image %}
+                        <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-3">
+                    {% else %}
+                        <div class="placeholder-image mb-3 d-flex align-items-center justify-content-center bg-light rounded" style="height: 200px;">
+                            <i class="mdi mdi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <h4>{{ post.title }}</h4>
+                    <p class="text-muted">{{ post.excerpt|default:"Aucun extrait disponible" }}</p>
+                    
+                    <div class="status-badges mb-3">
+                        {% if post.status == 'published' %}
+                            <span class="badge bg-success">
+                                <i class="mdi mdi-check-circle"></i> Publié
+                            </span>
+                        {% elif post.status == 'draft' %}
+                            <span class="badge bg-warning">
+                                <i class="mdi mdi-pencil"></i> Brouillon
+                            </span>
+                        {% elif post.status == 'scheduled' %}
+                            <span class="badge bg-info">
+                                <i class="mdi mdi-clock"></i> Programmé
+                            </span>
+                        {% endif %}
+                        
+                        <span class="badge bg-secondary">
+                            <i class="mdi mdi-folder"></i> {{ post.category|title }}
+                        </span>
+                    </div>
+
+                    {% comment %} <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-primary">{{ post.views|default:245 }}</h5>
+                            <p class="text-muted mb-0">Vues</p>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-success">{{ post.likes|default:23 }}</h5>
+                            <p class="text-muted mb-0">J'aime</p>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-info">{{ post.shares|default:12 }}</h5>
+                            <p class="text-muted mb-0">Partages</p>
+                        </div>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            {% comment %} <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Actions rapides</h5>
+                    <div class="d-grid gap-2">
+                        {% if post.status != 'published' %}
+                            <button class="btn btn-outline-success" onclick="publishPost({{ post.id }})">
+                                <i class="mdi mdi-publish"></i> Publier maintenant
+                            </button>
+                        {% else %}
+                            <button class="btn btn-outline-warning" onclick="unpublishPost({{ post.id }})">
+                                <i class="mdi mdi-archive"></i> Dépublier
+                            </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-primary" onclick="duplicatePost({{ post.id }})">
+                            <i class="mdi mdi-content-copy"></i> Dupliquer l'article
+                        </button>
+                        
+                        <button class="btn btn-outline-info" onclick="sharePost({{ post.id }})">
+                            <i class="mdi mdi-share"></i> Partager sur réseaux sociaux
+                        </button>
+                        
+                        <button class="btn btn-outline-secondary" onclick="exportPost({{ post.id }})">
+                            <i class="mdi mdi-download"></i> Exporter en PDF
+                        </button>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+
+            <!-- SEO Score -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Score SEO</h5>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: {{ post.seo_score|default:75 }}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">Score: {{ post.seo_score|default:75 }}/100</small>
+                        <small class="text-success">Excellent</small>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Optimisations SEO:</h6>
+                        <ul class="list-unstyled">
+                            <li class="text-success mb-1">
+                                <i class="mdi mdi-check"></i> Titre optimisé
+                            </li>
+                            <li class="text-success mb-1">
+                                <i class="mdi mdi-check"></i> Meta description
+                            </li>
+                            <li class="text-success mb-1">
+                                <i class="mdi mdi-check"></i> Mots-clés présents
+                            </li>
+                            <li class="text-warning mb-1">
+                                <i class="mdi mdi-alert"></i> Améliorer les images alt
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Information -->
+        <div class="col-xl-8">
+            <!-- Article Details -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Informations de l'article</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td>{{ post.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Titre:</strong></td>
+                                    <td>{{ post.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Slug:</strong></td>
+                                    <td><code>{{ post.slug }}</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Catégorie:</strong></td>
+                                    <td>{{ post.category|title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if post.status == 'published' %}
+                                            <span class="text-success">Publié</span>
+                                        {% elif post.status == 'draft' %}
+                                            <span class="text-warning">Brouillon</span>
+                                        {% elif post.status == 'scheduled' %}
+                                            <span class="text-info">Programmé</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Auteur:</strong></td>
+                                    <td>{{ post.author|default:"Admin" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date de création:</strong></td>
+                                    <td>{{ post.created_at|date:"d/m/Y H:i"|default:"01/08/2025 10:30" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dernière modification:</strong></td>
+                                    <td>{{ post.updated_at|date:"d/m/Y H:i"|default:"02/08/2025 14:20" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date de publication:</strong></td>
+                                    <td>{{ post.publish_date|date:"d/m/Y H:i"|default:"02/08/2025 15:00" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Temps de lecture:</strong></td>
+                                    <td>{{ post.read_time|default:5 }} min</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if post.tags %}
+                        <div class="mt-3">
+                            <h6><strong>Tags:</strong></h6>
+                            {% for tag in post.tags_list %}
+                                <span class="badge bg-primary me-1">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if post.meta_description %}
+                        <div class="mt-3">
+                            <h6><strong>Meta Description:</strong></h6>
+                            <p class="text-muted">{{ post.meta_description }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Article Content -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Contenu de l'article</h5>
+                    <div class="article-content">
+                        {{ post.content|safe|default:"<p>Aucun contenu disponible.</p>" }}
+                    </div>
+                </div>
+            </div>
+
+            {% comment %} <!-- Analytics -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Analytics et performance</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-primary">{{ post.views|default:245 }}</h4>
+                                <p class="text-muted mb-0">Vues totales</p>
+                                <small class="text-success">+15% ce mois</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-success">{{ post.unique_views|default:198 }}</h4>
+                                <p class="text-muted mb-0">Vues uniques</p>
+                                <small class="text-success">+12% ce mois</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-info">{{ post.avg_time|default:"3:45" }}</h4>
+                                <p class="text-muted mb-0">Temps moyen</p>
+                                <small class="text-warning">-5% ce mois</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-warning">{{ post.bounce_rate|default:"35%" }}</h4>
+                                <p class="text-muted mb-0">Taux de rebond</p>
+                                <small class="text-success">-8% ce mois</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Évolution des vues (30 derniers jours)</h6>
+                        <div id="viewsChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments & Engagement -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Engagement et commentaires</h5>
+                    
+                    <div class="row text-center mb-4">
+                        <div class="col-3">
+                            <h5 class="text-primary">{{ post.comments_count|default:8 }}</h5>
+                            <p class="text-muted mb-0">Commentaires</p>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="text-success">{{ post.likes|default:23 }}</h5>
+                            <p class="text-muted mb-0">J'aime</p>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="text-info">{{ post.shares|default:12 }}</h5>
+                            <p class="text-muted mb-0">Partages</p>
+                        </div>
+                        <div class="col-3">
+                            <h5 class="text-warning">4.2/5</h5>
+                            <p class="text-muted mb-0">Note moyenne</p>
+                        </div>
+                    </div>
+
+                    <div class="recent-comments">
+                        <h6>Commentaires récents:</h6>
+                        <div class="comment-item border rounded p-3 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <strong>Marie Dupont</strong>
+                                <small class="text-muted">Il y a 2 heures</small>
+                            </div>
+                            <p class="mb-1">Excellent article ! Très informatif et bien rédigé.</p>
+                            <div class="comment-actions">
+                                <button class="btn btn-sm btn-outline-primary">Répondre</button>
+                                <button class="btn btn-sm btn-outline-success">Approuver</button>
+                                <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                            </div>
+                        </div>
+                        
+                        <div class="comment-item border rounded p-3 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <strong>Jean Martin</strong>
+                                <small class="text-muted">Il y a 5 heures</small>
+                            </div>
+                            <p class="mb-1">J'aimerais avoir plus de détails sur ce sujet.</p>
+                            <div class="comment-actions">
+                                <button class="btn btn-sm btn-outline-primary">Répondre</button>
+                                <button class="btn btn-sm btn-outline-success">Approuver</button>
+                                <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+$(document).ready(function() {
+    // Initialize views chart
+    var options = {
+        series: [{
+            name: 'Vues',
+            data: [12, 19, 27, 33, 28, 35, 42, 38, 45, 52, 48, 55, 62, 58, 65, 72, 68, 75, 82, 78, 85, 92, 88, 95, 102, 98, 105, 112, 108, 115]
+        }],
+        chart: {
+            type: 'area',
+            height: 300,
+            zoom: {
+                enabled: false
+            }
+        },
+        colors: ['#02A195'],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3,
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        xaxis: {
+            categories: Array.from({length: 30}, (_, i) => `${i + 1}`)
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " vues"
+                }
+            }
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#viewsChart"), options);
+    chart.render();
+});
+
+function publishPost(postId) {
+    if (confirm('Êtes-vous sûr de vouloir publier cet article ?')) {
+        showToast('Article publié avec succès!', 'success');
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+    }
+}
+
+function unpublishPost(postId) {
+    if (confirm('Êtes-vous sûr de vouloir dépublier cet article ?')) {
+        showToast('Article dépublié', 'warning');
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+    }
+}
+
+function duplicatePost(postId) {
+    if (confirm('Voulez-vous créer une copie de cet article ?')) {
+        showToast('Article dupliqué avec succès!', 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'custom_admin:post_create' %}?duplicate=" + postId;
+        }, 1500);
+    }
+}
+
+function deletePost(postId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.')) {
+        showToast('Article supprimé avec succès!', 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'custom_admin:posts' %}";
+        }, 1500);
+    }
+}
+
+function previewPost(postId) {
+    window.open('/blog/preview/' + postId, '_blank');
+}
+
+function sharePost(postId) {
+    showToast('Options de partage disponibles', 'info');
+    // Open social sharing modal
+}
+
+function exportPost(postId) {
+    showToast('Export PDF en cours...', 'info');
+    setTimeout(() => {
+        showToast('Article exporté avec succès!', 'success');
+    }, 2000);
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+
+<style>
+.article-content {
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+
+.article-content h1, .article-content h2, .article-content h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.article-content p {
+    margin-bottom: 1rem;
+}
+
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 1rem 0;
+}
+
+.placeholder-image {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+}
+
+.status-badges .badge {
+    margin: 0 0.25rem;
+}
+
+.comment-item {
+    background: #f8f9fa;
+}
+
+.comment-actions .btn {
+    margin-right: 0.5rem;
+}
+</style>
+{% endblock %}

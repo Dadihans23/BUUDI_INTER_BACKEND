@@ -47,7 +47,8 @@ ALLOWED_HOSTS = [
     # AJOUTE TON URL NGROK ICI
     'buudi-inter-backend.onrender.com',
     '10.244.164.222',
-    '172.20.10.2'
+    '172.20.10.2',
+    '192.168.0.105'
     
     
 ]
@@ -68,6 +69,7 @@ INSTALLED_APPS = [
     'users',
     'transfers',
     'payments',
+    'dashboard_admin'
 ]
 
 MIDDLEWARE = [

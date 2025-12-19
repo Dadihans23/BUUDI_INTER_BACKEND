@@ -1,0 +1,81 @@
+{% load i18n static %}
+
+{% if app_list %}
+  {% for app in app_list %}
+    <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|urlencode %} current-app{% endif %}">
+      <table>
+        <caption>
+          <a href="{{ app.app_url }}" class="section" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
+        </caption>
+        {% for model in app.models %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            {% if model.admin_url %}
+              <th scope="row"><a href="{{ model.admin_url }}"{% if model.admin_url in request.path|urlencode %} aria-current="page"{% endif %}>{{ model.name }}</a></th>
+            {% else %}
+              <th scope="row">{{ model.name }}</th>
+            {% endif %}
+
+            {% if model.add_url %}
+              <td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>
+            {% else %}
+              <td></td>
+            {% endif %}
+
+            {% if model.admin_url and show_changelinks %}
+              {% if model.view_only %}
+                <td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>
+              {% else %}
+                <td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>
+              {% endif %}
+            {% elif show_changelinks %}
+              <td></td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endfor %}
+{% else %}
+  <!-- Custom message and links for Esacode -->
+  <div class="esacode-admin-welcome">
+    <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #f8fafc 0%, #e3f2fd 100%); border-radius: 1rem; margin: 2rem 0;">
+      <div style="margin-bottom: 2rem;">
+        <img src="{% static 'assets/images/esacode-logo.png' %}" alt="Esacode" style="height: 64px; width: auto; margin-right: 16px;">
+      </div>
+      
+      <h2 style="color: #02A195; margin-bottom: 1rem;">Interface d'Administration Django</h2>
+      <p style="color: #64748b; margin-bottom: 2rem; font-size: 1.1rem;">
+        Accès temporaire autorisé pour le développement et les tests
+      </p>
+      
+      <!-- Actions -->
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem;">
+        <a href="{% url 'custom_admin:admin_home' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #02A195; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600;">
+          <span style="font-size: 1.2rem;">🏠</span>
+          Retour à l'accueil admin
+        </a>
+        
+        <a href="{% url 'custom_admin:dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #F59E0B; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600;">
+          <span style="font-size: 1.2rem;">⚙️</span>
+          Dashboard Administrateur
+        </a>
+        
+        <a href="{% url 'custom_admin:user_dashboard' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: #0EA5E9; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600;">
+          <span style="font-size: 1.2rem;">👤</span>
+          Mon Dashboard utilisateur
+        </a>
+      </div>
+      
+      <!-- Info section -->
+      <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: left; max-width: 600px; margin: 0 auto;">
+        <h4 style="color: #1e293b; margin-bottom: 1rem;">Informations</h4>
+        <ul style="color: #64748b; line-height: 1.6; margin: 0; padding-left: 1.2rem;">
+          <li>Cette interface Django admin est accessible en mode développement</li>
+          <li>Pour gérer les utilisateurs et le contenu, utilisez l'interface custom admin</li>
+          <li>Les modèles Django natifs seront disponibles selon les permissions</li>
+          <li>En production, l'accès sera restreint aux super-administrateurs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endif %}

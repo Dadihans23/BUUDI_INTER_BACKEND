@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion Admin - Transfert Admin</title>
+    <link rel="shortcut icon" href="{% static 'custom_admin/images/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'custom_admin/css/plugins/simplebar.min.css' %}">
+    <link href="{% static 'custom_admin/css/icons.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/esacode-theme.css' %}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0d9488, #198754);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .login-header {
+            background: #0d9488;
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 2rem;
+            text-align: center;
+        }
+        .login-header h3 {
+            margin: 0;
+            font-weight: bold;
+        }
+        .login-body {
+            padding: 2rem;
+            background: white;
+            border-radius: 0 0 16px 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-header">
+        <h3>🔐 Connexion Admin</h3>
+        <p class="mt-2 mb-0 opacity-75">Transfert Admin - Buudi Inter</p>
+    </div>
+    <div class="login-body">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nom d'utilisateur</label>
+                <input type="text" name="username" class="form-control form-control-lg" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Mot de passe</label>
+                <input type="password" name="password" class="form-control form-control-lg" minlength="8" required>
+                <small class="text-muted">Minimum 8 caractères</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="mdi mdi-login me-2"></i> Se connecter
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                Accès réservé aux administrateurs
+            </small>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

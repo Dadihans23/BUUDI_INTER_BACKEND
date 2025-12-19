@@ -1,0 +1,199 @@
+{% extends 'custom_admin/base_common.html' %}
+{% load static %}
+
+{% block title %}Modifier Transfert #{{ transfer.id }} - Transfert Admin{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Dashboard -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-view-dashboard"></i><span>Dashboard</span>
+    </a>
+</li>
+
+<!-- Utilisateurs -->
+<li class="accordion-menu-item has-submenu">
+    <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
+        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
+        <li><a href="{% url 'custom_admin:users' %}">Liste des utilisateurs</a></li>
+        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
+    </ul>
+</li>
+
+<!-- Transferts → ACTIF -->
+<li class="accordion-menu-item has-submenu opened">
+    <a href="#" class="accordion-toggle opened">
+        <i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" style="display: block;">
+        <li><a href="{% url 'custom_admin:transfers' %}">Tous les transferts</a></li>
+    </ul>
+</li>
+
+<!-- Frais Opérateurs -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:fees' %}">
+        <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
+    </a>
+</li>
+
+<!-- Paramètres -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:settings' %}">
+        <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
+    </a>
+</li>
+
+<!-- Admin Django -->
+<li class="accordion-menu-item">
+    <a href="{% url 'admin:index' %}">
+        <i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span>
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">
+                            Modifier le Transfert #{{ transfer.id }}
+                        </h2>
+                        <p class="text-muted mb-0">
+                            Utilisateur : {{ transfer.user.name }} ({{ transfer.user.phone }})
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:transfer_detail' transfer.id %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour au détail
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card border">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="mdi mdi-pencil"></i> Modifier le statut du transfert</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Statut actuel</label>
+                            <div class="p-3 bg-light rounded">
+                                <span class="badge fs-6 {% if transfer.status == 'success' %}bg-success{% elif transfer.status == 'failed' %}bg-danger{% elif transfer.status == 'disbursing' %}bg-info{% elif transfer.status == 'debited' %}bg-primary{% else %}bg-warning{% endif %}">
+                                    {{ transfer.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="status" class="form-label fw-bold">Nouveau statut</label>
+                            <select name="status" id="status" class="form-select form-select-lg">
+                                <option value="created" {% if transfer.status == 'created' %}selected{% endif %}>Créé</option>
+                                <option value="invoice_sent" {% if transfer.status == 'invoice_sent' %}selected{% endif %}>Facture envoyée</option>
+                                <option value="debited" {% if transfer.status == 'debited' %}selected{% endif %}>Débité</option>
+                                <option value="disbursing" {% if transfer.status == 'disbursing' %}selected{% endif %}>En cours de crédit</option>
+                                <option value="success" {% if transfer.status == 'success' %}selected{% endif %}>Réussi</option>
+                                <option value="failed" {% if transfer.status == 'failed' %}selected{% endif %}>Échoué</option>
+                            </select>
+                            <div class="form-text">
+                                Attention : changer le statut manuellement peut affecter les calculs de revenus.
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'custom_admin:transfer_detail' transfer.id %}" class="btn btn-outline-secondary">
+                                <i class="mdi mdi-close"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="mdi mdi-content-save"></i> Sauvegarder les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Récapitulatif du transfert -->
+        <div class="col-xl-4">
+            <div class="card border">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="mdi mdi-information"></i> Récapitulatif</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>De :</strong><br>
+                        <span class="badge bg-info">{{ transfer.from_wallet|upper }}</span> {{ transfer.from_phone }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Vers :</strong><br>
+                        <span class="badge bg-success">{{ transfer.to_wallet|upper }}</span> {{ transfer.to_phone }}
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <strong>Montant demandé :</strong><br>
+                        <strong class="fs-5 text-primary">{{ transfer.amount_requested|floatformat:0 }} FCFA</strong>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Notre commission :</strong><br>
+                        <span class="text-success fw-bold">+{{ transfer.our_fee_amount|floatformat:0 }} FCFA</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Frais Paydunia :</strong><br>
+                        <span class="text-warning">-{{ transfer.payin_fee_amount|add:transfer.payout_fee_amount|floatformat:0 }} FCFA</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Total débité :</strong><br>
+                        <strong>{{ transfer.total_debited|floatformat:0 }} FCFA</strong>
+                    </div>
+                    <div class="p-3 bg-light rounded">
+                        <strong>Bénéfice net :</strong><br>
+                        <strong class="fs-5 text-success">{{ transfer.estimated_net_profit|floatformat:0 }} FCFA</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
+    }).showToast();
+}
+
+// Confirmation avant sauvegarde si changement de statut sensible
+document.querySelector('form').addEventListener('submit', function(e) {
+    const currentStatus = "{{ transfer.status }}";
+    const newStatus = document.getElementById('status').value;
+    
+    if (currentStatus !== newStatus && (newStatus === 'success' || newStatus === 'failed')) {
+        if (!confirm('Vous allez changer le statut vers "' + newStatus + '". Cela affectera les statistiques de revenus. Continuer ?')) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}

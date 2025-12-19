@@ -1,0 +1,202 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Newsletter - {{ settings.site_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Newsletter</h3>
+                        <p class="text-muted mb-0">Abonnés à la newsletter ({{ page_obj.paginator.count }} total)</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:newsletter_export' %}" class="btn btn-outline-success">
+                            <i class="mdi mdi-download"></i> Exporter CSV
+                        </a>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item active">Newsletter</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-24">
+                        <h4 class="header-title mb-0">📧 Abonnés Newsletter</h4>
+                    </div>
+                    
+                    <!-- PAGINATION INFO -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                            sur {{ page_obj.paginator.count }} abonnés
+                        </small>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Date d'abonnement</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subscriber in page_obj %}
+                                <tr>
+                                    <th scope="row">{{ subscriber.id }}</th>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-success rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <i class="mdi mdi-newsletter text-white"></i>
+                                            </div>
+                                            <strong>{{ subscriber.email }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ subscriber.subscribed_at|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <!-- ✅ COPIER -->
+                                            <button class="action-btn btn-copy" data-copy="{{ subscriber.email }}" title="Copier l'email">
+                                                <i class="mdi mdi-content-copy"></i>
+                                            </button>
+                                            <!-- ✅ SUPPRIMER RÉEL -->
+                                            <form method="POST" action="{% url 'custom_admin:newsletter_delete' subscriber.id %}" style="display: inline;" onsubmit="return confirm('Supprimer {{ subscriber.email }} ?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="action-btn btn-delete-hans" title="Supprimer">
+                                                    <i class="mdi mdi-delete"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="mdi mdi-newsletter" style="font-size: 3rem; opacity: 0.3;"></i>
+                                            <p class="mt-2">Aucun abonné trouvé</p>
+                                            <small class="text-muted">Les abonnés apparaissent ici après inscription</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="items-per-page">
+                                <select class="form-select form-select-sm" id="newsletterItemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                                    <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                                    <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                                    <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                                </select>
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for num in page_obj.paginator.page_range %}
+                                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// PAGINATION
+function updateItemsPerPage() {
+    const perPage = $('#newsletterItemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', perPage);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+
+// COPIER EMAIL
+$(document).on('click', '.btn-copy', function() {
+    const email = $(this).data('copy');
+    navigator.clipboard.writeText(email).then(() => {
+        showToast('📧 Email copié !', 'success');
+    });
+});
+
+// SUPPRESSION (déjà gérée par le form)
+</script>
+
+<style>
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.btn-delete:hover {
+    color: #dc3545 !important;
+}
+
+.btn-copy:hover {
+    color: #007bff !important;
+}
+</style>
+{% endblock %}

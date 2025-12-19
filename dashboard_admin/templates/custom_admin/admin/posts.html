@@ -1,0 +1,169 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Articles - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Articles</h3>
+                        <p class="text-muted mb-0">Gestion des articles de blog</p>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item active">Articles</li>
+                                </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-24">
+                        <h4 class="header-title mb-0">Articles de Blog</h4>
+                        <a href="{% url 'custom_admin:post_create' %}" class="btn btn-primary">
+                            <i class="mdi mdi-plus"></i> Nouvel Article
+                        </a>
+                    </div>
+                    
+                    <!-- PAGINATION INFO -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} 
+                            sur {{ page_obj.paginator.count }} articles
+                        </small>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Titre</th>
+                                    <th scope="col">Auteur</th>
+                                    <th scope="col">Publié</th>
+                                    <th scope="col">Date Création</th>
+                                    <th scope="col">Dernière Modification</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                               {% for post in page_obj %}
+<tr>
+    <th scope="row">{{ post.id }}</th>
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="avatar-sm bg-info rounded-circle d-flex align-items-center justify-content-center me-2">
+                <i class="mdi mdi-post text-white"></i>
+            </div>
+            <strong>{{ post.title|truncatechars:50 }}</strong>
+        </div>
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                <i class="mdi mdi-account text-white"></i>
+            </div>
+            <strong>{{ post.author.get_full_name|default:post.author.username }}</strong>
+        </div>
+    </td>
+    <td>
+        {% if post.is_published %}
+            <span class="badge badge-success"><i class="mdi mdi-check-circle"></i> Publié</span>
+        {% else %}
+            <span class="badge badge-warning"><i class="mdi mdi-file-document"></i> Brouillon</span>
+        {% endif %}
+    </td>
+    <td><small class="text-muted">{{ post.created_at|date:"d/m/Y H:i" }}</small></td>
+    <td><small class="text-muted">{{ post.updated_at|date:"d/m/Y H:i" }}</small></td>
+    <td>
+        <div class="action-buttons">
+            <a href="{% url 'custom_admin:post_detail' post.id %}" class="action-btn btn-view" title="Voir">
+                <i class="mdi mdi-eye"></i>
+            </a>
+            {% comment %} <a href="{% url 'custom_admin:post_edit' post.id %}" class="action-btn btn-edit" title="Modifier">
+                <i class="mdi mdi-pencil"></i>
+            </a> {% endcomment %}
+            <form method="POST" action="{% url 'custom_admin:post_delete' post.id %}" style="display: inline;" onsubmit="return confirm('Supprimer {{ post.title }} ?')">
+                {% csrf_token %}
+                <button type="submit" class="action-btn btn-delete" title="Supprimer">
+                    <i class="mdi mdi-delete"></i>
+                </button>
+            </form>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<!-- ... reste identique ... -->
+{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- PAGINATION -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="items-per-page">
+                                <select class="form-select form-select-sm" id="postsItemsPerPage" style="width: auto;" onchange="updateItemsPerPage()">
+                                    <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5 par page</option>
+                                    <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10 par page</option>
+                                    <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 par page</option>
+                                </select>
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for num in page_obj.paginator.page_range %}
+                                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                        <a class="page-link" href="?page={{ num }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.per_page %}&per_page={{ request.GET.per_page }}{% endif %}">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// PAGINATION (exactement comme les autres)
+function updateItemsPerPage() {
+    const perPage = $('#postsItemsPerPage').val();
+    const url = new URL(window.location.href);
+    url.searchParams.set('per_page', perPage);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

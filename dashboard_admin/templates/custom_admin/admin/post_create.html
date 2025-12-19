@@ -1,0 +1,400 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Créer un Article - Esacode Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Créer un nouvel article</h3>
+                        <p class="text-muted mb-0">Rédigez un nouvel article pour votre blog</p>
+                    </div>
+                    <div class="pull-right">
+                        <div class="btn-group mx-auto">
+                            <ol class="breadcrumb hide-phone m-0">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:posts' %}">Articles</a></li>
+                                <li class="breadcrumb-item active">Créer</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-xl-8">
+                <!-- Main Content -->
+                <div class="card border">
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label for="postTitle" class="form-label">Titre de l'article *</label>
+                            <input type="text" class="form-control form-control-lg" id="postTitle" name="title" required placeholder="Entrez le titre de votre article...">
+                            <small class="text-muted">Le slug sera généré automatiquement</small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="postExcerpt" class="form-label">Extrait</label>
+                            <textarea class="form-control" id="postExcerpt" name="excerpt" rows="3" placeholder="Résumé court de l'article (optionnel)..."></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Contenu de l'article *</label>
+                            <div id="editor" style="height: 400px;"></div>
+                            <textarea name="content" id="hiddenContent" style="display: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEO Section -->
+                <div class="card border">
+                    <div class="card-body">
+                        <h5 class="header-title border-bottom mb-3 pb-2">
+                            <i class="mdi mdi-search-web"></i> Optimisation SEO
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="metaTitle" class="form-label">Titre SEO</label>
+                                    <input type="text" class="form-control" id="metaTitle" name="meta_title" maxlength="60" placeholder="Titre pour les moteurs de recherche">
+                                    <small class="text-muted"><span id="metaTitleCount">0</span>/60 caractères</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="metaKeywords" class="form-label">Mots-clés</label>
+                                    <input type="text" class="form-control" id="metaKeywords" name="meta_keywords" placeholder="mot-clé1, mot-clé2, mot-clé3">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="metaDescription" class="form-label">Description SEO</label>
+                            <textarea class="form-control" id="metaDescription" name="meta_description" rows="3" maxlength="160" placeholder="Description pour les moteurs de recherche"></textarea>
+                            <small class="text-muted"><span id="metaDescCount">0</span>/160 caractères</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <!-- Publishing Options -->
+                <div class="card border">
+                    <div class="card-body">
+                        <h5 class="header-title mb-3">
+                            <i class="mdi mdi-publish"></i> Publication
+                        </h5>
+                        
+                        <div class="form-group mb-3">
+                            <label for="postStatus" class="form-label">Statut</label>
+                            <select class="form-control" id="postStatus" name="status">
+                                <option value="draft">Brouillon</option>
+                                <option value="published">Publié</option>
+                                <option value="scheduled">Programmé</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-3" id="publishDateGroup" style="display: none;">
+                            <label for="publishDate" class="form-label">Date de publication</label>
+                            <input type="datetime-local" class="form-control" id="publishDate" name="publish_date">
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="postCategory" class="form-label">Catégorie</label>
+                            <select class="form-control" id="postCategory" name="category">
+                                <option value="actualites">Actualités</option>
+                                <option value="tutoriels">Tutoriels</option>
+                                <option value="technologies">Technologies</option>
+                                <option value="annonces">Annonces</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="postTags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="postTags" name="tags" placeholder="tag1, tag2, tag3">
+                            <small class="text-muted">Séparez les tags par des virgules</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="publish" class="btn btn-primary">
+                                <i class="mdi mdi-publish"></i> Publier
+                            </button>
+                            {% comment %} <button type="submit" name="action" value="draft" class="btn btn-outline-secondary">
+                                <i class="mdi mdi-content-save"></i> Sauvegarder en brouillon
+                            </button> {% endcomment %}
+                            <a href="{% url 'custom_admin:posts' %}" class="btn btn-outline-danger">
+                                <i class="mdi mdi-close"></i> Annuler
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Featured Image -->
+                <div class="card border">
+                    <div class="card-body">
+                        <h5 class="header-title mb-3">
+                            <i class="mdi mdi-image"></i> Image à la une
+                        </h5>
+                        
+                        <div class="form-group mb-3">
+                            <input type="file" class="form-control" id="featuredImage" name="featured_image" accept="image/*">
+                        </div>
+
+                        <div id="imagePreview" class="text-center" style="display: none;">
+                            <img id="previewImg" src="#" alt="Aperçu" class="img-fluid rounded" style="max-height: 200px;">
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeImage()">
+                                <i class="mdi mdi-delete"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Stats Preview -->
+                <div class="card border">
+                    <div class="card-body">
+                        <h5 class="header-title mb-3">
+                            <i class="mdi mdi-chart-line"></i> Aperçu
+                        </h5>
+                        
+                        <div class="stats-preview">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h6 class="text-muted">Mots</h6>
+                                    <span class="h5" id="wordCount">0</span>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="text-muted">Lecture</h6>
+                                    <span class="h5" id="readTime">0 min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="seo-score">
+                            <h6 class="text-muted">Score SEO</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-warning" id="seoProgress" style="width: 30%"></div>
+                            </div>
+                            <small class="text-muted" id="seoFeedback">Ajoutez un titre et une description</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Quill editor
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['blockquote', 'code-block'],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
+
+    // Auto-save content to hidden textarea
+    quill.on('text-change', function() {
+        $('#hiddenContent').val(quill.root.innerHTML);
+        updateStats();
+        updateSEOScore();
+    });
+
+    // Status change handler
+    $('#postStatus').on('change', function() {
+        if ($(this).val() === 'scheduled') {
+            $('#publishDateGroup').show();
+        } else {
+            $('#publishDateGroup').hide();
+        }
+    });
+
+    // Image preview
+    $('#featuredImage').on('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#previewImg').attr('src', e.target.result);
+                $('#imagePreview').show();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Character counting
+    $('#metaTitle').on('input', function() {
+        const count = $(this).val().length;
+        $('#metaTitleCount').text(count);
+        if (count > 60) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+        updateSEOScore();
+    });
+
+    $('#metaDescription').on('input', function() {
+        const count = $(this).val().length;
+        $('#metaDescCount').text(count);
+        if (count > 160) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+        updateSEOScore();
+    });
+
+    // Auto-generate meta title from post title
+    $('#postTitle').on('input', function() {
+        if ($('#metaTitle').val() === '') {
+            $('#metaTitle').val($(this).val()).trigger('input');
+        }
+        updateSEOScore();
+    });
+
+    function updateStats() {
+        const content = quill.getText();
+        const words = content.trim().split(/\s+/).length;
+        const readTime = Math.max(1, Math.ceil(words / 200));
+        
+        $('#wordCount').text(words);
+        $('#readTime').text(readTime + ' min');
+    }
+
+    function updateSEOScore() {
+        let score = 0;
+        let feedback = [];
+
+        // Title check
+        const title = $('#postTitle').val();
+        if (title.length > 0) {
+            score += 20;
+            if (title.length >= 30 && title.length <= 60) score += 10;
+        } else {
+            feedback.push('Ajoutez un titre');
+        }
+
+        // Meta title check
+        const metaTitle = $('#metaTitle').val();
+        if (metaTitle.length > 0) {
+            score += 15;
+            if (metaTitle.length <= 60) score += 10;
+        } else {
+            feedback.push('Ajoutez un titre SEO');
+        }
+
+        // Meta description check
+        const metaDesc = $('#metaDescription').val();
+        if (metaDesc.length > 0) {
+            score += 15;
+            if (metaDesc.length >= 120 && metaDesc.length <= 160) score += 10;
+        } else {
+            feedback.push('Ajoutez une description SEO');
+        }
+
+        // Content check
+        const content = quill.getText();
+        if (content.length > 300) {
+            score += 15;
+            if (content.length > 1000) score += 10;
+        } else {
+            feedback.push('Ajoutez plus de contenu');
+        }
+
+        // Keywords check
+        const keywords = $('#metaKeywords').val();
+        if (keywords.length > 0) score += 10;
+
+        // Update progress bar
+        $('#seoProgress').css('width', score + '%');
+        
+        if (score < 40) {
+            $('#seoProgress').removeClass('bg-warning bg-success').addClass('bg-danger');
+        } else if (score < 70) {
+            $('#seoProgress').removeClass('bg-danger bg-success').addClass('bg-warning');
+        } else {
+            $('#seoProgress').removeClass('bg-danger bg-warning').addClass('bg-success');
+        }
+
+        // Update feedback
+        if (feedback.length > 0) {
+            $('#seoFeedback').text(feedback.join(', '));
+        } else {
+            $('#seoFeedback').text('Excellent score SEO !');
+        }
+    }
+
+    // Form submission
+    $('form').on('submit', function() {
+        $('#hiddenContent').val(quill.root.innerHTML);
+    });
+
+    // Initial updates
+    updateStats();
+    updateSEOScore();
+});
+
+function removeImage() {
+    $('#featuredImage').val('');
+    $('#imagePreview').hide();
+}
+</script>
+
+<style>
+.ql-editor {
+    min-height: 300px;
+}
+
+.stats-preview {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.seo-score {
+    margin-top: 1rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+</style>
+{% endblock %}

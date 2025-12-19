@@ -1,0 +1,420 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Administration Esacode">
+    <meta name="author" content="Esacode">
+
+    <title>Administration Esacode</title>
+
+    <link rel="shortcut icon" href="{% static 'assets/images/favicon.ico' %}">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="{% static 'custom_admin/css/plugins/simplebar.min.css' %}">
+    <link href="{% static 'custom_admin/css/icons.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'custom_admin/js/plugins/uniform/css/default.css' %}" rel="stylesheet">
+    <link href="{% static 'custom_admin/js/plugins/switchery/switchery.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/esacode-theme.css' %}">
+</head>
+<body class="bg-light">
+
+<div class="min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <!-- Header avec logo -->
+                <div class="text-center mb-5">
+                    <div class="d-flex justify-content-center align-items-center mb-4">
+                        <img src="{% static 'assets/images/esacode-logo.png' %}" alt="Esacode" style="height: 64px; width: auto; margin-right: 16px;">
+                        <h1 class="text-primary mb-0 fw-bold">Administration</h1>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
+                            <p class="text-warning lead">Bienvenue, Administrateur</p>
+                        {% else %}
+                            <p class="text-primary lead">Bienvenue, {{ user.get_full_name|default:user.username }}</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted lead">Choisissez votre interface d'administration</p>
+                    {% endif %}
+                </div>
+
+                <!-- Navigation Cards - CONDITIONNELLE -->
+                <div class="row g-4">
+                    
+                    {% if user.is_authenticated %}
+                        <!-- Utilisateur normal - Dashboard Utilisateur -->
+                        {% if not user.is_superuser %}
+                        <div class="col-12">
+                            <a href="{% url 'custom_admin:user_dashboard' %}" class="text-decoration-none">
+                                <div class="card border-0 shadow-lg h-100 esacode-hover-lift">
+                                    <div class="card-body text-center p-5">
+                                        <div class="mb-4">
+                                            <div class="icon-circle bg-primary bg-gradient mx-auto mb-3">
+                                                <i class="mdi mdi-account-circle text-white" style="font-size: 3rem;"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <h3 class="card-title text-primary mb-3">Mon Dashboard</h3>
+                                        <p class="text-muted mb-4">
+                                            Accédez à votre espace personnel avec vos projets, statistiques d'utilisation et paramètres de compte.
+                                        </p>
+                                        
+                                        <div class="features-list text-start mb-4">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <ul class="list-unstyled">
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Mes projets TTS
+                                                        </li>
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Mes traductions
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-6">
+                                                    <ul class="list-unstyled">
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Usage & Analytics
+                                                        </li>
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Gestion API
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="btn btn-primary btn-lg w-100">
+                                            <i class="mdi mdi-rocket me-2"></i>
+                                            Accéder à mon espace
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <!-- Admin/Superuser - Dashboard Admin -->
+                        {% if user.is_superuser %}
+                        <div class="col-12">
+                            <a href="{% url 'custom_admin:dashboard' %}" class="text-decoration-none">
+                                <div class="card border-0 shadow-lg h-100 esacode-hover-lift">
+                                    <div class="card-body text-center p-5">
+                                        <div class="mb-4">
+                                            <div class="icon-circle bg-warning bg-gradient mx-auto mb-3">
+                                                <i class="mdi mdi-shield-crown text-white" style="font-size: 3rem;"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <h3 class="card-title text-warning mb-3">Mode Administrateur</h3>
+                                        <p class="text-muted mb-4">
+                                            Interface d'administration complète pour gérer la plateforme, les utilisateurs et les analytics.
+                                        </p>
+                                        
+                                        <div class="features-list text-start mb-4">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <ul class="list-unstyled">
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Gestion utilisateurs
+                                                        </li>
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Gestion packs
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-6">
+                                                    <ul class="list-unstyled">
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Analytics globales
+                                                        </li>
+                                                        <li class="mb-2">
+                                                            <i class="mdi mdi-check text-success me-2"></i>
+                                                            Rapports & paramètres
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="btn btn-warning btn-lg w-100">
+                                            <i class="mdi mdi-cog me-2"></i>
+                                            Accéder au mode Admin
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <!-- Admin peut aussi accéder au dashboard utilisateur -->
+                        {% comment %} {% if user.is_superuser %}
+                        <div class="col-12">
+                            <a href="{% url 'custom_admin:user_dashboard' %}" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+                                    <div class="card-body text-center p-4">
+                                        <div class="mb-3">
+                                            <div class="icon-circle bg-info bg-gradient mx-auto mb-2" style="width: 60px; height: 60px;">
+                                                <i class="mdi mdi-account-switch text-white" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <h5 class="text-info mb-2">Accès Utilisateur</h5>
+                                        <p class="text-muted small mb-3">Tester l'interface utilisateur en tant qu'admin</p>
+                                        
+                                        <div class="btn btn-outline-info btn-sm">
+                                            <i class="mdi mdi-account me-1"></i>
+                                            Mode Utilisateur
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endif %} {% endcomment %}
+
+                    {% else %}
+                        <!-- Utilisateur non connecté - Les deux options -->
+                        <div class="col-md-6">
+                            <a href="{% url 'custom_admin:user_dashboard' %}" class="text-decoration-none">
+                                <!-- Box Dashboard Utilisateur (comme avant) -->
+                                <div class="card border-0 shadow-lg h-100 esacode-hover-lift">
+                                    <!-- Contenu identique à l'original -->
+                                    <div class="card-body text-center p-5">
+                                        <div class="mb-4">
+                                            <div class="icon-circle bg-primary bg-gradient mx-auto mb-3">
+                                                <i class="mdi mdi-account-circle text-white" style="font-size: 3rem;"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="card-title text-primary mb-3">Mon Dashboard</h3>
+                                        <p class="text-muted mb-4">Accédez à votre espace personnel...</p>
+                                        <!-- Reste du contenu... -->
+                                        <div class="btn btn-primary btn-lg w-100">
+                                            <i class="mdi mdi-rocket me-2"></i>
+                                            Accéder à mon espace
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-md-6">
+                            <a href="{% url 'custom_admin:dashboard' %}" class="text-decoration-none">
+                                <!-- Box Admin (comme avant) -->
+                                <div class="card border-0 shadow-lg h-100 esacode-hover-lift">
+                                    <!-- Contenu identique à l'original -->
+                                    <div class="card-body text-center p-5">
+                                        <div class="mb-4">
+                                            <div class="icon-circle bg-warning bg-gradient mx-auto mb-3">
+                                                <i class="mdi mdi-shield-crown text-white" style="font-size: 3rem;"></i>
+                                            </div>
+                                        </div>
+                                        <h3 class="card-title text-warning mb-3">Mode Administrateur</h3>
+                                        <p class="text-muted mb-4">Interface d'administration complète...</p>
+                                        <!-- Reste du contenu... -->
+                                        <div class="btn btn-warning btn-lg w-100">
+                                            <i class="mdi mdi-cog me-2"></i>
+                                            Accéder au mode Admin
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions supplémentaires -->
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center py-4">
+                                <h5 class="card-title mb-3">Actions rapides</h5>
+                                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                    <a href="/" class="btn btn-outline-primary">
+                                        <i class="mdi mdi-home me-2"></i>
+                                        Retour au site
+                                    </a>
+                                    
+                                    {% if user.is_authenticated %}
+                                        {% if not user.is_superuser %}
+                                            <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-info">
+                                                <i class="mdi mdi-account me-2"></i>
+                                                Mon profil
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% comment %} {% if user.is_superuser %}
+                                            <a href="{% url 'custom_admin:dashboard' %}" class="btn btn-outline-warning">
+                                                <i class="mdi mdi-shield-crown me-2"></i>
+                                                Admin Dashboard
+                                            </a>
+                                            <a href="{% url 'admin:index' %}" class="btn btn-outline-secondary">
+                                                <i class="mdi mdi-django me-2"></i>
+                                                Admin Django
+                                            </a>
+                                        {% endif %} {% endcomment %}
+                                        
+                                        <a href="{% url 'backend:logout_user' %}" class="btn btn-outline-danger">
+                                            <i class="mdi mdi-logout me-2"></i>
+                                            Se déconnecter
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'account_login' %}" class="btn btn-outline-success">
+                                            <i class="mdi mdi-login me-2"></i>
+                                            Se connecter
+                                        </a>
+                                        <a href="{% url 'account_signup' %}" class="btn btn-outline-primary">
+                                            <i class="mdi mdi-account-plus me-2"></i>
+                                            S'inscrire
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer info -->
+                <div class="text-center mt-5">
+                    <p class="text-muted small">
+                        <i class="mdi mdi-shield-check text-success me-1"></i>
+                        Interface sécurisée Esacode &copy; {{ "now"|date:"Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Files -->
+<script src="{% static 'custom_admin/js/plugins/jquery.min.js' %}"></script>
+<script src="{% static 'custom_admin/js/plugins/bootstrap.bundle.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    // Animation des cartes au chargement
+    $('.card').each(function(index) {
+        $(this).css('opacity', '0').css('transform', 'translateY(30px)');
+        $(this).delay(index * 200).animate({
+            opacity: 1
+        }, 600, function() {
+            $(this).css('transform', 'translateY(0)');
+        });
+    });
+
+    // Redirection automatique après 3 secondes pour les utilisateurs connectés
+    {% if user.is_authenticated %}
+        {% if user.is_superuser %}
+            setTimeout(function() {
+                window.location.href = "{% url 'custom_admin:dashboard' %}";
+            }, 3000);
+        {% else %}
+            setTimeout(function() {
+                window.location.href = "{% url 'custom_admin:user_dashboard' %}";
+            }, 3000);
+        {% endif %}
+    {% endif %}
+
+    // Effet hover amélioré
+    $('.esacode-hover-lift').hover(
+        function() {
+            $(this).find('.icon-circle').addClass('animate__animated animate__pulse');
+        },
+        function() {
+            $(this).find('.icon-circle').removeClass('animate__animated animate__pulse');
+        }
+    );
+});
+</script>
+
+<style>
+.icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.icon-circle::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+    transform: rotate(45deg);
+    transition: all 0.6s ease;
+    opacity: 0;
+}
+
+.card:hover .icon-circle::before {
+    opacity: 1;
+    animation: shimmer 1.5s ease-in-out;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.esacode-hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.esacode-hover-lift:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+}
+
+.card {
+    border-radius: 1rem !important;
+    transition: all 0.3s ease;
+}
+
+.btn-lg {
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+}
+
+body {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, var(--bs-bg-opacity, 1), rgba(255,255,255,0.1)) !important;
+}
+
+/* Animation de redirection */
+.redirecting {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+</style>
+
+</body>
+</html>

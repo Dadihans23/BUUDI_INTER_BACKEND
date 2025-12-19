@@ -1,0 +1,70 @@
+{% extends 'custom_admin/base_common.html' %}
+
+{% block logo_url %}{% url "custom_admin:dashboard" %}{% endblock %}
+{% block logo_text %}Transfert Admin{% endblock %}
+
+{% block user_dropdown_menu %}
+<li><a href="{% url 'custom_admin:settings' %}">Paramètres</a></li>
+<li role="separator" class="divider"></li>
+
+{% endblock %}
+
+{% block sidebar_menu %}
+<!-- Dashboard -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-view-dashboard"></i><span>Tableau de bord</span>
+    </a>
+</li>
+
+<!-- Utilisateurs -->
+<li class="accordion-menu-item has-submenu {% if 'user' in request.path %}opened{% endif %}">
+    <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
+        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
+        <li><a href="{% url 'custom_admin:users' %}" class="{% if request.resolver_match.url_name in 'users user_detail user_edit user_create' %}active{% endif %}">Liste des utilisateurs</a></li>
+        <li><a href="{% url 'custom_admin:user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Ajouter un utilisateur</a></li>
+    </ul>
+</li>
+
+<!-- Transferts -->
+<li class="accordion-menu-item has-submenu {% if 'transfer' in request.path %}opened{% endif %}">
+    <a href="#" class="accordion-toggle {% if 'transfer' in request.path %}opened{% endif %}">
+        <i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu" {% if 'transfer' in request.path %}style="display: block;"{% endif %}>
+        <li><a href="{% url 'custom_admin:transfers' %}" class="{% if request.resolver_match.url_name in 'transfers transfer_detail transfer_edit transfer_delete transfer_retry' %}active{% endif %}">Tous les transferts</a></li>
+    </ul>
+</li>
+
+<!-- Frais Opérateurs -->
+<li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
+    <a href="{% url 'custom_admin:fees' %}">
+        <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
+    </a>
+</li>
+
+<!-- Analytics Revenus -->
+<li class="accordion-menu-item {% if request.resolver_match.url_name == 'revenue_analytics' %}active{% endif %}">
+    <a href="{% url 'custom_admin:revenue_analytics' %}">
+        <i class="menu-icon mdi mdi-chart-line"></i><span>Analytics Revenus</span>
+    </a>
+</li>
+
+<!-- Paramètres -->
+<li class="accordion-menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+    <a href="{% url 'custom_admin:settings' %}">
+        <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
+    </a>
+</li>
+
+<!-- Admin Django -->
+<li class="accordion-menu-item">
+    <a href="{% url 'admin:index' %}">
+        <i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span>
+    </a>
+</li>
+{% endblock %}

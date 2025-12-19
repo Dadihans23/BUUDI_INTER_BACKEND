@@ -1,0 +1,749 @@
+{% extends 'custom_admin/base_user.html' %}
+{% load static %}
+
+{% block title %}Mes Projets TTS - Esacode{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="breadcrumb-header">Mes Projets Text-to-Speech</h3>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:user_dashboard' %}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Projets TTS</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="d-flex gap-2">
+                        {% comment %} <button class="btn btn-primary" onclick="showTTSGenerator()">
+                            <i class="mdi mdi-plus"></i> Nouveau projet TTS
+                        </button> {% endcomment %}
+                        <a href="{% url 'custom_admin:user_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour au Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    {% comment %} <!-- Statistiques rapides -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-primary mb-1">{{ projects|length }}</h4>
+                    <p class="text-muted mb-0">Total projets</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-success mb-1">77</h4>
+                    <p class="text-muted mb-0">Tokens utilisés</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-1">4:19</h4>
+                    <p class="text-muted mb-0">Durée totale</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 esacode-stat-card">
+                <div class="card-body text-center">
+                    <h4 class="text-warning mb-1">2</h4>
+                    <p class="text-muted mb-0">En cours</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Générateur TTS -->
+    <div class="row" id="tts-generator" style="display: none;">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="header-title">
+                            <i class="mdi mdi-microphone text-primary me-2"></i>
+                            Générateur Text-to-Speech
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="hideTTSGenerator()">
+                            <i class="mdi mdi-close"></i> Fermer
+                        </button>
+                    </div>
+
+                    <form id="ttsForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Nom du projet</label>
+                                    <input type="text" class="form-control" id="projectName" placeholder="Ex: Narration Podcast #13" required>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Texte à synthétiser</label>
+                                    <textarea class="form-control" id="ttsText" rows="6" 
+                                              placeholder="Saisissez votre texte ici..." required></textarea>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <small class="text-muted">
+                                            <span id="charCount">0</span> caractères • 
+                                            <span id="tokenEstimate">0</span> tokens estimés
+                                        </small>
+                                        <small class="text-muted">
+                                            <span id="durationEstimate">0:00</span> estimé
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Langue</label>
+                                            <select class="form-control" id="ttsLanguage">
+                                                <option value="fr">Français</option>
+                                                <option value="en">Anglais</option>
+                                                <option value="es">Espagnol</option>
+                                                <option value="de">Allemand</option>
+                                                <option value="it">Italien</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Voix</label>
+                                            <select class="form-control" id="ttsVoice">
+                                                <option value="claire">Claire - Féminine</option>
+                                                <option value="marc">Marc - Masculin</option>
+                                                <option value="sophie">Sophie - Féminine</option>
+                                                <option value="julien">Julien - Masculin</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Aperçu du projet</h6>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Vitesse</label>
+                                            <input type="range" class="form-range" id="ttsSpeed" min="0.5" max="2" step="0.1" value="1">
+                                            <small class="text-muted">Vitesse: <span id="speedValue">1.0x</span></small>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Ton</label>
+                                            <select class="form-control form-control-sm" id="ttsTone">
+                                                <option value="neutral">Neutre</option>
+                                                <option value="friendly">Amical</option>
+                                                <option value="professional">Professionnel</option>
+                                                <option value="enthusiastic">Enthousiaste</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="addPauses">
+                                                <label class="form-check-label" for="addPauses">
+                                                    Pauses automatiques
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info">
+                                            <small>
+                                                <i class="mdi mdi-information me-1"></i>
+                                                <strong>Coût estimé:</strong> <span id="costEstimate">0</span> tokens
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button type="button" class="btn btn-outline-primary" onclick="previewTTS()">
+                                        <i class="mdi mdi-play"></i> Aperçu (30s)
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="mdi mdi-waveform"></i> Générer l'audio complet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des projets -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title">Mes Projets TTS</h5>
+                        <div class="d-flex gap-2">
+                            <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                                <option value="">Tous les statuts</option>
+                                <option value="completed">Terminés</option>
+                                <option value="processing">En cours</option>
+                                <option value="draft">Brouillons</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row" id="projectsList">
+                        {% for project in projects %}
+                        <div class="col-xl-4 col-lg-6 mb-4" data-status="{{ project.status }}">
+                            <div class="card border h-100 project-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ project.name }}</h6>
+                                            <small class="text-muted">{{ project.created_at|date:"d M Y à H:i" }}</small>
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                                                <i class="mdi mdi-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="editProject({{ project.id }})">
+                                                    <i class="mdi mdi-pencil me-2"></i>Modifier
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="duplicateProject({{ project.id }})">
+                                                    <i class="mdi mdi-content-copy me-2"></i>Dupliquer
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject({{ project.id }})">
+                                                    <i class="mdi mdi-delete me-2"></i>Supprimer
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        {% if project.status == 'completed' %}
+                                            <span class="badge bg-success">Terminé</span>
+                                        {% elif project.status == 'processing' %}
+                                            <span class="badge bg-warning">En cours</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Brouillon</span>
+                                        {% endif %}
+                                        
+                                        <span class="badge bg-primary ms-1">{{ project.voice }}</span>
+                                    </div>
+
+                                    <p class="card-text text-truncate-3">{{ project.text }}</p>
+
+                                    <div class="row text-center mb-3">
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Durée</small>
+                                            <strong>{{ project.duration|default:"--" }}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Tokens</small>
+                                            <strong>{{ project.tokens_used }}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted d-block">Langue</small>
+                                            <strong>{{ project.language|upper }}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-grid gap-2">
+                                        {% if project.status == 'completed' %}
+                                            <button class="btn btn-primary btn-sm" onclick="playAudio('{{ project.audio_url }}', '{{ project.name }}')">
+                                                <i class="mdi mdi-play me-2"></i>Écouter
+                                            </button>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-outline-secondary btn-sm" onclick="downloadAudio('{{ project.audio_url }}', '{{ project.name }}')">
+                                                    <i class="mdi mdi-download"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary btn-sm" onclick="shareProject({{ project.id }})">
+                                                    <i class="mdi mdi-share"></i>
+                                                </button>
+                                            </div>
+                                        {% elif project.status == 'processing' %}
+                                            <button class="btn btn-warning btn-sm" disabled>
+                                                <i class="mdi mdi-loading mdi-spin me-2"></i>Génération en cours...
+                                            </button>
+                                            <div class="progress" style="height: 4px;">
+                                                <div class="progress-bar bg-warning" style="width: 65%"></div>
+                                            </div>
+                                        {% else %}
+                                            <button class="btn btn-outline-primary btn-sm" onclick="continueProject({{ project.id }})">
+                                                <i class="mdi mdi-play me-2"></i>Continuer
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-5">
+                                <i class="mdi mdi-microphone-off text-muted" style="font-size: 4rem;"></i>
+                                <h5 class="text-muted mt-3">Aucun projet TTS</h5>
+                                <p class="text-muted">Créez votre premier projet Text-to-Speech</p>
+                                <button class="btn btn-primary" onclick="showTTSGenerator()">
+                                    <i class="mdi mdi-plus me-2"></i>Nouveau projet
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination for TTS Projects -->
+                    <div class="mt-4" id="ttsPaginationSection">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="pagination-info">
+                                <small class="text-muted">
+                                    Affichage de <span id="ttsCurrentStart">1</span> à <span id="ttsCurrentEnd">6</span> 
+                                    sur <span id="ttsTotalItems">0</span> projets
+                                </small>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
+                                <div class="items-per-page">
+                                    <select class="form-select form-select-sm" id="ttsItemsPerPage" style="width: auto;">
+                                        <option value="6" selected>6 par page</option>
+                                        <option value="9">9 par page</option>
+                                        <option value="12">12 par page</option>
+                                        <option value="18">18 par page</option>
+                                    </select>
+                                </div>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="ttsPaginationControls">
+                                        <li class="page-item" id="ttsPrevPage">
+                                            <a class="page-link" href="#" onclick="goToTTSPage(ttsCurrentPage - 1)">
+                                                <i class="mdi mdi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item" id="ttsNextPage">
+                                            <a class="page-link" href="#" onclick="goToTTSPage(ttsCurrentPage + 1)">
+                                                <i class="mdi mdi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> {% endcomment %}
+    <!-- Coming Soon Content -->
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg text-center">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <i class="mdi mdi-account-voice text-primary" style="font-size: 5rem;"></i>
+                    </div>
+                    
+                    <h2 class="text-primary mb-3">Text-To-Speech</h2>
+                    <h4 class="text-muted mb-4">Bientôt Disponible</h4>
+                    
+                    <p class="text-muted lead">
+                        Cette fonctionnalité sera disponible prochainement.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Audio Player -->
+<div class="modal fade" id="audioPlayerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-volume-high me-2"></i>
+                    <span id="audioTitle">Lecteur Audio</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-5">
+                <div class="mb-4">
+                    <i class="mdi mdi-waveform text-primary" style="font-size: 4rem;"></i>
+                </div>
+                
+                <audio controls class="w-100 mb-4" id="audioPlayer">
+                    <source src="" type="audio/mpeg">
+                    Votre navigateur ne supporte pas l'audio.
+                </audio>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-primary w-100" onclick="replayAudio()">
+                            <i class="mdi mdi-replay"></i> Rejouer
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-success w-100" onclick="downloadCurrentAudio()">
+                            <i class="mdi mdi-download"></i> Télécharger
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-info w-100" onclick="shareCurrentAudio()">
+                            <i class="mdi mdi-share"></i> Partager
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// TTS pagination variables
+let ttsCurrentPage = 1;
+let ttsItemsPerPage = 6;
+let ttsTotalItems = 0;
+let ttsFilteredItems = [];
+
+$(document).ready(function() {
+    // Initialize TTS pagination
+    initializeTTSPagination();
+    
+    // Initialize character counter
+    $('#ttsText').on('input', updateCounts);
+    $('#ttsSpeed').on('input', function() {
+        $('#speedValue').text($(this).val() + 'x');
+        updateCounts();
+    });
+    
+    // Status filter with pagination
+    $('#statusFilter').on('change', function() {
+        filterTTSProjects();
+    });
+    
+    // Items per page change
+    $('#ttsItemsPerPage').on('change', function() {
+        ttsItemsPerPage = parseInt($(this).val());
+        ttsCurrentPage = 1;
+        updateTTSPagination();
+    });
+    
+    // Form submission
+    $('#ttsForm').on('submit', function(e) {
+        e.preventDefault();
+        generateTTS();
+    });
+});
+
+function updateCounts() {
+    const text = $('#ttsText').val();
+    const charCount = text.length;
+    const tokenEstimate = Math.ceil(charCount / 4);
+    const durationEstimate = Math.ceil(charCount / 150); // ~150 chars per minute
+    
+    $('#charCount').text(charCount.toLocaleString());
+    $('#tokenEstimate').text(tokenEstimate);
+    $('#costEstimate').text(tokenEstimate);
+    
+    const minutes = Math.floor(durationEstimate / 60);
+    const seconds = durationEstimate % 60;
+    $('#durationEstimate').text(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+}
+
+function showTTSGenerator() {
+    $('#tts-generator').slideDown();
+    $('html, body').animate({
+        scrollTop: $('#tts-generator').offset().top - 100
+    }, 500);
+}
+
+function hideTTSGenerator() {
+    $('#tts-generator').slideUp();
+}
+
+function previewTTS() {
+    const text = $('#ttsText').val();
+    if (!text.trim()) {
+        showToast('Veuillez saisir du texte à synthétiser', 'warning');
+        return;
+    }
+    
+    showToast('Génération de l\'aperçu en cours...', 'info');
+    
+    // Simulate preview generation
+    setTimeout(() => {
+        showToast('Aperçu généré ! (simulation)', 'success');
+        // Here you would play a short audio preview
+    }, 2000);
+}
+
+function initializeTTSPagination() {
+    ttsTotalItems = $('.project-card').parent().length;
+    ttsFilteredItems = $('.project-card').parent().toArray();
+    updateTTSPagination();
+}
+
+function filterTTSProjects() {
+    const status = $('#statusFilter').val();
+    
+    // Reset and apply filters
+    ttsFilteredItems = $('.project-card').parent().toArray().filter(item => {
+        const $item = $(item);
+        return !status || $item.data('status') === status;
+    });
+    
+    ttsTotalItems = ttsFilteredItems.length;
+    ttsCurrentPage = 1;
+    updateTTSPagination();
+}
+
+function updateTTSPagination() {
+    const totalPages = Math.ceil(ttsTotalItems / ttsItemsPerPage);
+    const startIndex = (ttsCurrentPage - 1) * ttsItemsPerPage;
+    const endIndex = Math.min(startIndex + ttsItemsPerPage, ttsTotalItems);
+    
+    // Hide all items first
+    $('.project-card').parent().hide();
+    
+    // Show items for current page
+    for (let i = startIndex; i < endIndex; i++) {
+        if (ttsFilteredItems[i]) {
+            $(ttsFilteredItems[i]).show();
+        }
+    }
+    
+    // Update pagination info
+    $('#ttsCurrentStart').text(ttsTotalItems > 0 ? startIndex + 1 : 0);
+    $('#ttsCurrentEnd').text(endIndex);
+    $('#ttsTotalItems').text(ttsTotalItems);
+    
+    // Update pagination controls
+    updateTTSPaginationControls(totalPages);
+    
+    // Show/hide pagination section
+    if (totalPages <= 1) {
+        $('#ttsPaginationSection').hide();
+    } else {
+        $('#ttsPaginationSection').show();
+    }
+}
+
+function updateTTSPaginationControls(totalPages) {
+    const $controls = $('#ttsPaginationControls');
+    
+    // Clear existing page numbers
+    $controls.find('.tts-page-number').remove();
+    
+    // Add page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = i === ttsCurrentPage ? 'active' : '';
+        $controls.find('#ttsNextPage').before(`
+            <li class="page-item tts-page-number ${isActive}">
+                <a class="page-link" href="#" onclick="goToTTSPage(${i})">${i}</a>
+            </li>
+        `);
+    }
+    
+    // Enable/disable prev/next buttons
+    $('#ttsPrevPage').toggleClass('disabled', ttsCurrentPage === 1);
+    $('#ttsNextPage').toggleClass('disabled', ttsCurrentPage === totalPages || totalPages === 0);
+}
+
+function goToTTSPage(page) {
+    const totalPages = Math.ceil(ttsTotalItems / ttsItemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    
+    ttsCurrentPage = page;
+    updateTTSPagination();
+    
+    // Smooth scroll to projects list
+    $('html, body').animate({
+        scrollTop: $('#projectsList').offset().top - 100
+    }, 300);
+}
+
+function generateTTS() {
+    const formData = {
+        name: $('#projectName').val(),
+        text: $('#ttsText').val(),
+        language: $('#ttsLanguage').val(),
+        voice: $('#ttsVoice').val(),
+        speed: $('#ttsSpeed').val(),
+        tone: $('#ttsTone').val(),
+        pauses: $('#addPauses').is(':checked')
+    };
+    
+    if (!formData.name.trim() || !formData.text.trim()) {
+        showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+        return;
+    }
+    
+    showToast('Génération de l\'audio en cours... Cela peut prendre quelques minutes.', 'info');
+    
+    // Simulate TTS generation
+    setTimeout(() => {
+        showToast('Audio généré avec succès !', 'success');
+        hideTTSGenerator();
+        // Refresh pagination instead of full reload
+        initializeTTSPagination();
+    }, 3000);
+}
+
+function playAudio(audioUrl, title) {
+    $('#audioTitle').text(title);
+    $('#audioPlayer source').attr('src', audioUrl);
+    $('#audioPlayer')[0].load();
+    $('#audioPlayerModal').modal('show');
+}
+
+function replayAudio() {
+    const audio = $('#audioPlayer')[0];
+    audio.currentTime = 0;
+    audio.play();
+}
+
+function downloadAudio(audioUrl, filename) {
+    const link = document.createElement('a');
+    link.href = audioUrl;
+    link.download = filename.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.mp3';
+    link.click();
+    showToast('Téléchargement démarré !', 'success');
+}
+
+function downloadCurrentAudio() {
+    const audioUrl = $('#audioPlayer source').attr('src');
+    const title = $('#audioTitle').text();
+    downloadAudio(audioUrl, title);
+}
+
+function shareProject(projectId) {
+    const shareUrl = `${window.location.origin}/share/tts/${projectId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('Lien de partage copié !', 'success');
+    });
+}
+
+function shareCurrentAudio() {
+    shareProject(1); // Simulate sharing current audio
+}
+
+function editProject(projectId) {
+    showToast('Ouverture de l\'éditeur...', 'info');
+    // Here you would load the project data into the form
+}
+
+function duplicateProject(projectId) {
+    showToast('Projet dupliqué !', 'success');
+    // Here you would create a copy of the project
+}
+
+function deleteProject(projectId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) {
+        showToast('Projet supprimé', 'success');
+        // Here you would delete the project
+    }
+}
+
+function continueProject(projectId) {
+    showToast('Chargement du projet...', 'info');
+    showTTSGenerator();
+    // Here you would load the project data into the form
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+
+<style>
+.esacode-stat-card {
+    background: white;
+    border-radius: 12px;
+    border-left: 4px solid var(--esacode-primary);
+    transition: all 0.3s ease;
+}
+
+.esacode-stat-card:hover {
+    transform: translateY(-2px);
+    border-left-width: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.project-card {
+    transition: all 0.3s ease;
+}
+
+.project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    max-height: calc(1.4em * 3);
+}
+
+.form-range {
+    background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: var(--esacode-primary);
+}
+
+.form-range::-moz-range-thumb {
+    background: var(--esacode-primary);
+    border: none;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+#tts-generator {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.progress {
+    background-color: rgba(0,0,0,0.1);
+}
+
+audio {
+    border-radius: 0.5rem;
+    background: var(--esacode-gray-50);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Souscription #{{ subscription.id }} - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Souscription #{{ subscription.id }}</h3>
+                        <p class="text-muted mb-0">Détails de la souscription</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:subscription_edit' subscription.id %}" class="btn btn-primary">
+                            <i class="mdi mdi-pencil"></i> Modifier
+                        </a>
+                        {% comment %} <button class="btn btn-outline-danger" onclick="deleteSubscription({{ subscription.id }})">
+                            <i class="mdi mdi-delete"></i> Supprimer
+                        </button> {% endcomment %}
+                        <a href="{% url 'custom_admin:subscriptions' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Informations de la Souscription</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td>{{ subscription.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Utilisateur:</strong></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <i class="mdi mdi-account text-white"></i>
+                                            </div>
+                                            {{ subscription.user.email }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Pack:</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">{{ subscription.pack.name }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Prix:</strong></td>
+                                    <td>{{ subscription.pack.price|floatformat:2 }}€/mois</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if subscription.is_active %}
+                                            <span class="badge badge-success">
+                                                <i class="mdi mdi-check-circle"></i> Actif
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="mdi mdi-close-circle"></i> Inactif
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Créé le:</strong></td>
+                                    <td>{{ subscription.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% if subscription.expires_at %}
+                                <tr>
+                                    <td><strong>Expire le:</strong></td>
+                                    <td>
+                                        <span class="{% if subscription.expires_at < now %}text-danger{% else %}text-muted{% endif %}">
+                                            {{ subscription.expires_at|date:"d/m/Y H:i" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td><strong>Token API:</strong></td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" value="{{ subscription.token }}" readonly>
+                                            <button class="btn btn-outline-secondary copy-btn" data-copy="{{ subscription.token }}" title="Copier">
+                                                <i class="mdi mdi-content-copy"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Statistics -->
+            <div class="card border mt-3">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Statistiques d'utilisation</h5>
+                    
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary">{{ pack|default:0|floatformat:0 }}</h3>
+                            <p class="text-muted mb-0">Utilisés</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success">{{ subscription.characters_remaining|floatformat:0 }}</h3>
+                            <p class="text-muted mb-0">Restants</p>
+                        </div>
+                        {% comment %} <div class="col-md-3">
+                            <h3 class="text-info">{{ subscription.characters_used|add:subscription.characters_remaining|floatformat:0 }}</h3>
+                            <p class="text-muted mb-0">Total</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning">
+                                {% widthratio subscription.characters_used subscription.characters_used|add:subscription.characters_remaining 100 %}
+                                %
+                            </h3>
+                            <p class="text-muted mb-0">Utilisation</p> {% endcomment %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% comment %} <div class="col-xl-4">
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Actions rapides</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning" onclick="toggleSubscription({{ subscription.id }})">
+                            {% if subscription.is_active %}
+                                <i class="mdi mdi-pause"></i> Suspendre
+                            {% else %}
+                                <i class="mdi mdi-play"></i> Activer
+                            {% endif %}
+                        </button>
+                        <button class="btn btn-info" onclick="regenerateToken({{ subscription.id }})">
+                            <i class="mdi mdi-refresh"></i> Régénérer Token
+                        </button>
+                        <button class="btn btn-success" onclick="sendNotification({{ subscription.id }})">
+                            <i class="mdi mdi-email-send"></i> Envoyer notification
+                        </button>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteSubscription(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette souscription ?')) {
+        $.post("{% url 'custom_admin:subscription_delete' 0 %}".replace('0', id), 
+            {'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()}
+        ).done(function(data) {
+            showToast(data.message, 'success');
+            setTimeout(() => window.location.href = "{% url 'custom_admin:subscriptions' %}", 1500);
+        }).fail(function() {
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
+}
+
+function toggleSubscription(id) {
+    showToast('Statut modifié avec succès!', 'success');
+}
+
+function regenerateToken(id) {
+    if (confirm('Régénérer le token ? L\'ancien ne fonctionnera plus.')) {
+        showToast('Nouveau token généré !', 'success');
+    }
+}
+
+function sendNotification(id) {
+    showToast('Notification envoyée !', 'success');
+}
+
+// COPIER TOKEN
+$(document).on('click', '.copy-btn', function() {
+    const token = $(this).data('copy');
+    navigator.clipboard.writeText(token).then(() => {
+        showToast('Token copié !', 'success');
+    });
+});
+</script>
+{% endblock %}

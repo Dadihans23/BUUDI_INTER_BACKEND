@@ -1,0 +1,148 @@
+{% extends 'custom_admin/base_common.html' %}
+
+{% block logo_url %}{% url "custom_admin:user_dashboard" %}{% endblock %}
+{% block logo_text %}👤 Espace Client{% endblock %}
+
+{% block user_dropdown_menu %}
+<li><a href="{% url 'custom_admin:user_dashboard' %}">Mon Dashboard</a></li>
+{% if user.is_staff %}
+    <li><a href="{% url 'custom_admin:dashboard' %}">Dashboard Admin</a></li>
+    <li><a href="{% url 'admin:index' %}">Admin Django</a></li>
+{% endif %}
+{% endblock %}
+
+{% block sidebar_menu %}
+<!-- User Dashboard -->
+<li class="accordion-menu-item">
+    <a href='{% url "custom_admin:user_dashboard" %}' class="{% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-view-dashboard"></i><span>Mon Dashboard</span>
+    </a>
+</li>
+
+<!-- Mes Requests -->
+<li class="accordion-menu-item has-submenu">
+    <a href="#" class="accordion-toggle">
+        <i class="menu-icon mdi mdi-history"></i><span>Mes Requests</span>
+        <i class="mdi mdi-chevron-down accordion-arrow"></i>
+    </a>
+    <ul class="sub-menu">
+        <li><a href="{% url 'custom_admin:user_language_detection' %}" class="{% if request.resolver_match.url_name == 'user_language_detection' %}active{% endif %}">🔍 Détection de langues</a></li>
+        <li><a href="{% url 'custom_admin:user_translations' %}" class="{% if request.resolver_match.url_name == 'user_translations' %}active{% endif %}">🌐 Traductions</a></li>
+        <li><a href="{% url 'custom_admin:user_tts_projects' %}" class="{% if request.resolver_match.url_name == 'user_tts_projects' %}active{% endif %}">🎤 TTS</a></li>
+        <li><a href="{% url 'custom_admin:user_voice_clones' %}" class="{% if request.resolver_match.url_name == 'user_voice_clones' %}active{% endif %}">🎭 Clones vocaux</a></li>
+    </ul>
+</li>
+
+<!-- Notifications -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:user_notifications' %}" class="{% if request.resolver_match.url_name == 'user_notifications' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-bell"></i><span>Notifications</span>
+        <!-- Badge for unread notifications -->
+    </a>
+</li>
+
+<!-- Facturation -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:user_billing' %}" class="{% if request.resolver_match.url_name == 'user_billing' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-credit-card"></i><span>Facturation</span>
+    </a>
+</li>
+
+<!-- Paramètres -->
+<li class="accordion-menu-item">
+    <a href="{% url 'custom_admin:user_settings' %}" class="{% if request.resolver_match.url_name == 'user_settings' %}active{% endif %}">
+        <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
+    </a>
+</li>
+
+{% if user.is_staff %}
+<!-- Accès Admin (si staff) -->
+<li class="accordion-menu-item" style="border-top: 1px solid #e9ecef; margin-top: 1rem; padding-top: 1rem;">
+    <a href='{% url "custom_admin:dashboard" %}' class="text-warning">
+        <i class="menu-icon mdi mdi-shield-crown"></i><span>🛡️ Mode Administrateur</span>
+    </a>
+</li>
+{% endif %}
+
+<!-- Aide et Support -->
+<li class="accordion-menu-item">
+    <a href="#" onclick="showSupportModal()">
+        <i class="menu-icon mdi mdi-help-circle"></i><span>Aide & Support</span>
+    </a>
+</li>
+{% endblock %}
+
+{% block custom_js %}
+<!-- Scripts spécifiques aux utilisateurs -->
+<script>
+function showSupportModal() {
+    $('#detailsModal .modal-title span').text('Aide & Support');
+    $('#detailsModal .modal-body').html(`
+        <div class="row mt-3"">
+            <div class="col-12 text-center mb-3">
+                <i class="mdi mdi-email text-info" style="font-size: 3rem;"></i>
+                <h6 class="mt-2">Contact Support</h6>
+                <p class="text-muted small">Contactez notre équipe support</p>
+                <a href="mailto:support@esacode.com" class="btn btn-outline-info btn-sm">Envoyer un email</a>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12 text-center">
+                <div class="bg-light p-3 rounded">
+                    <i class="mdi mdi-clock text-warning me-2"></i>
+                    <small class="text-muted">Support disponible du Lundi au Vendredi, 9h-18h</small>
+                </div>
+            </div>
+        </div>
+    `);
+    $('#detailsModal').modal('show');
+}
+
+// User-specific utilities
+window.EsacodeUser = {
+    generateTTS: function(text, voice, language) {
+        console.log('Generating TTS:', { text, voice, language });
+        // Implementation here
+    },
+    
+    translateText: function(text, fromLang, toLang) {
+        console.log('Translating:', { text, fromLang, toLang });
+        // Implementation here
+    },
+    
+    detectLanguage: function(text) {
+        console.log('Detecting language for:', text);
+        // Implementation here
+    },
+    
+    updateProfile: function(data) {
+        console.log('Updating profile:', data);
+        // Implementation here
+    }
+};
+
+// Show notification count
+document.addEventListener('DOMContentLoaded', function() {
+    // Simulate updating notification count
+    const notificationBadge = document.querySelector('.badge.bg-danger');
+    if (notificationBadge) {
+        // In real app, fetch this from API
+        const unreadCount = 3;
+        if (unreadCount > 0) {
+            notificationBadge.textContent = unreadCount;
+            notificationBadge.style.display = 'inline';
+        } else {
+            notificationBadge.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+

@@ -1,0 +1,203 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+{% block title %}Message #{{ contact.id }} - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- PAGE CONTENT -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3>Message de {{ contact.name }}</h3>
+                        <p class="text-muted mb-0">Détails du message</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:contact_reply' contact.id %}" class="btn btn-primary">
+                            Répondre
+                        </a>
+                        <a href="{% url 'custom_admin:contacts' %}" class="btn btn-outline-secondary">
+                            Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ contact.subject }}</h5>
+                    <span class="badge {% if contact.is_read %}bg-secondary{% else %}bg-primary{% endif %}">
+                        {% if contact.is_read %}Lu{% else %}Non lu{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>De:</strong> {{ contact.name }} &lt;{{ contact.email }}&gt;<br>
+                        <strong>Date:</strong> {{ contact.submitted_at|date:"d/m/Y à H:i" }}
+                    </div>
+                    <hr>
+                    <div class="message-content">
+                        <p>{{ contact.message|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'custom_admin:contact_reply' contact.id %}" class="btn btn-primary">
+                            Répondre
+                        </a>
+                        <button class="btn btn-success" onclick="markAsRead({{ contact.id }})" {% if contact.is_read %}disabled{% endif %}>
+                            Marquer comme lu
+                        </button>
+                        <!-- BOUTON SUPPRIMER -->
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteContactModal">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Statut</h5>
+                </div>
+                <div class="card-body">
+                    <p><small class="text-muted">
+                        {% if contact.replied %}
+                            Répondu le {{ contact.replied_at|date:"d/m/Y à H:i" }}
+                        {% else %}
+                            En attente de réponse
+                        {% endif %}
+                    </small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE SUPPRESSION (EN DEHORS DE TOUT ROW/COL) -->
+<div class="modal fade" id="deleteContactModal" tabindex="-1" aria-labelledby="deleteContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteContactModalLabel">
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="mt-3 mb-0"><strong>Supprimer ce message ?</strong></p>
+                <p class="text-muted small">
+                    De: <strong>{{ contact.name }}</strong> ({{ contact.email }})<br>
+                    Sujet: <em>{{ contact.subject|truncatechars:50 }}</em>
+                </p>
+                <p class="text-danger fw-bold">Action irréversible.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                    Annuler
+                </button>
+                <form method="post" action="{% url 'custom_admin:contact_delete' contact.id %}" id="deleteContactForm" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+// Marquer comme lu
+function markAsRead(contactId) {
+    fetch(`/admin/contacts/${contactId}/mark-read/`, {
+        method: 'POST',
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+            "Content-Type": "application/json",
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showToast(data.message || "Message mis à jour", "success");
+        setTimeout(() => location.reload(), 1000);
+    })
+    .catch(() => showToast("Erreur réseau", "error"));
+}
+
+
+document.getElementById('deleteContactForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const modal = document.getElementById('deleteContactModal');
+    const button = form.querySelector('button[type="submit"]');
+    const originalHTML = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = 'Suppression...';
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showToast('Message supprimé avec succès !', 'success');
+            bootstrap.Modal.getInstance(modal).hide();
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 800);
+        } else {
+            throw new Error(data.message || 'Erreur');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Erreur lors de la suppression', 'error');
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    });
+});
+
+
+function showToast(message, type = "info") {
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        className: `toast-${type}`,
+        stopOnFocus: true,
+        style: {
+            padding: "14px 18px",
+            borderRadius: "8px",
+            fontSize: "15px",
+        }
+    }).showToast();
+}
+
+</script>
+{% endblock %}

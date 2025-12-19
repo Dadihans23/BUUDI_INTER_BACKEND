@@ -1,0 +1,473 @@
+{% extends 'custom_admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Pack {{ pack.name }} - Esacode Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title mb-15">
+                <div class="d-flex justify-content-md-between justify-content-center py-2">
+                    <div class="d-none d-md-block">
+                        <h3 class="breadcrumb-header">Pack "{{ pack.name }}"</h3>
+                        <p class="text-muted mb-0">Informations détaillées du pack</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'custom_admin:pack_edit' pack.id %}" class="btn btn-primary">
+                            <i class="mdi mdi-pencil"></i> Modifier
+                        </a>
+                        <button class="btn btn-outline-warning" onclick="duplicatePack({{ pack.id }})">
+                            <i class="mdi mdi-content-copy"></i> Dupliquer
+                        </button>
+                        <form action="{% url 'custom_admin:pack_delete' pack.id %}" method="POST" style="display: inline;" class="delete-pack-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger" title="Supprimer">
+                                <i class="mdi mdi-delete"></i> Supprimer
+                            </button>
+                        </form>
+                        <a href="{% url 'custom_admin:packs' %}" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-arrow-left"></i> Retour
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Pack Overview -->
+        <div class="col-xl-4">
+            <div class="card border">
+                <div class="card-body text-center">
+                    <div class="pack-icon mb-3">
+                        <i class="mdi mdi-package-variant text-primary" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3>{{ pack.name }}</h3>
+                    <div class="price-display my-3">
+                        <span class="h1 text-primary">${{ pack.price }}</span>
+                        <span class="text-muted h5">/mois</span>
+                    </div>
+                    
+                    <div class="status-badges mb-3">
+                        {% if pack.is_active %}
+                            <span class="badge bg-success">
+                                <i class="mdi mdi-check-circle"></i> Actif
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger">
+                                <i class="mdi mdi-close-circle"></i> Inactif
+                            </span>
+                        {% endif %}
+                        
+                        {% if pack.is_best_plan %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="mdi mdi-star"></i> Meilleur plan
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="row text-center mt-4">
+                        <div class="col-4">
+                            <h5 class="text-primary">{{ pack.subscribers_count }}</h5>
+                            <p class="text-muted mb-0">Abonnés</p>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-success">${{ pack.total_revenue }}</h5>
+                            <p class="text-muted mb-0">Revenus</p>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-info">{{ pack.characters_processed }}</h5>
+                            <p class="text-muted mb-0">Caractères</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            {% comment %} <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title mb-3">Actions rapides</h5>
+                    <div class="d-grid gap-2">
+                        {% if pack.is_active %}
+                            <button class="btn btn-outline-warning" onclick="togglePackStatus({{ pack.id }}, false)">
+                                <i class="mdi mdi-pause"></i> Désactiver le pack
+                            </button>
+                        {% else %}
+                            <button class="btn btn-outline-success" onclick="togglePackStatus({{ pack.id }}, true)">
+                                <i class="mdi mdi-play"></i> Activer le pack
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'custom_admin:subscriptions_by_pack' pack.id %}" class="btn btn-outline-info">
+                            <i class="mdi mdi-account-group"></i> Voir les abonnés
+                        </a>
+                        
+                        <a href="{% url 'custom_admin:pack_export' pack.id %}" class="btn btn-outline-primary">
+                            <i class="mdi mdi-download"></i> Exporter les données
+                        </a>
+                    </div>
+                </div>
+            </div> {% endcomment %}
+        </div>
+
+        <!-- Detailed Information -->
+        <div class="col-xl-8">
+            <!-- Pack Details -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Informations du pack</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td>{{ pack.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nom:</strong></td>
+                                    <td>{{ pack.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Prix:</strong></td>
+                                    <td>${{ pack.price }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Limite caractères:</strong></td>
+                                    <td>{{ pack.character_limit|default:"Illimité" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Durée:</strong></td>
+                                    <td>
+                                        {% if pack.duration == 0 %}
+                                            Illimité
+                                        {% else %}
+                                            {{ pack.duration }} jours
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Date de création:</strong></td>
+                                    <td>{{ pack.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dernière modification:</strong></td>
+                                    <td>{{ pack.updated_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if pack.is_active %}
+                                            <span class="text-success">Actif</span>
+                                        {% else %}
+                                            <span class="text-danger">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Plan recommandé:</strong></td>
+                                    <td>
+                                        {% if pack.is_best_plan %}
+                                            <span class="text-warning">Oui</span>
+                                        {% else %}
+                                            <span class="text-muted">Non</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total revenus:</strong></td>
+                                    <td class="text-success">${{ pack.total_revenue }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6><strong>Description:</strong></h6>
+                        <p class="text-muted">{{ pack.description }}</p>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6><strong>Fonctionnalités incluses:</strong></h6>
+                        <div class="row">
+                            {% for feature in pack.features %}
+                                <div class="col-md-3">
+                                    <span class="badge bg-primary mb-1">
+                                        <i class="mdi mdi-check"></i> {{ feature|title }}
+                                    </span>
+                                </div>
+                            {% empty %}
+                                <div class="col-12">
+                                    <span class="text-muted">Aucune fonctionnalité spécifiée</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Analytics -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Analytiques d'utilisation</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-primary">{{ pack.characters_processed }}</h4>
+                                <p class="text-muted mb-0">Caractères traités</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-success">{{ pack.api_requests_count }}</h4>
+                                <p class="text-muted mb-0">Requêtes API</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-warning">{{ pack.subscribers_count }}</h4>
+                                <p class="text-muted mb-0">Abonnés</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-info">{{ pack.total_revenue }}</h4>
+                                <p class="text-muted mb-0">Revenus</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6>Évolution des souscriptions (30 derniers jours)</h6>
+                        <div id="subscriptionsChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card border">
+                <div class="card-body">
+                    <h5 class="header-title border-bottom mb-3 pb-2">Activité récente</h5>
+                    
+                    <div class="timeline">
+                        {% for subscription in pack.subscription_set.all|slice:":5" %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Nouvelle souscription</h6>
+                                <p class="timeline-text">{{ subscription.user.get_full_name|default:subscription.user.username }} a souscrit à ce pack</p>
+                                <small class="text-muted">{{ subscription.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                        {% for apicall in subscription.api_calls.all|slice:":3" %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Utilisation API</h6>
+                                <p class="timeline-text">{{ apicall.request_type }} - {{ apicall.character_count }} caractères</p>
+                                <small class="text-muted">{{ apicall.timestamp|timesince }} ago</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endfor %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Création du pack</h6>
+                                <p class="timeline-text">Pack créé et activé</p>
+                                <small class="text-muted">{{ pack.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+$(document).ready(function() {
+    // Initialize subscription chart
+    var options = {
+        series: [{
+            name: 'Nouvelles souscriptions',
+            data: [
+                {% for subscription in pack.subscription_set.all|dictsort:"created_at"|slice:":30" %}
+                    {{ subscription.created_at|date:"j" }},
+                {% endfor %}
+            ]
+        }],
+        chart: {
+            type: 'area',
+            height: 300,
+            zoom: { enabled: false }
+        },
+        colors: ['#02A195'],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3,
+            }
+        },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        xaxis: {
+            categories: Array.from({length: 30}, (_, i) => `Jour ${i + 1}`)
+        },
+        tooltip: {
+            y: { formatter: val => val + " souscriptions" }
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#subscriptionsChart"), options);
+    chart.render();
+
+    // AJAX for delete pack
+    $('.delete-pack-form').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        if (confirm('Supprimer ce pack ? Cette action est irréversible.')) {
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    showToast('Pack supprimé avec succès !', 'success');
+                    setTimeout(() => {
+                        window.location.href = "{% url 'custom_admin:packs' %}";
+                    }, 1500);
+                },
+                error: function() {
+                    showToast('Erreur lors de la suppression', 'error');
+                }
+            });
+        }
+    });
+});
+
+function togglePackStatus(packId, status) {
+    const action = status ? 'activer' : 'désactiver';
+    if (confirm(`Êtes-vous sûr de vouloir ${action} ce pack ?`)) {
+        $.ajax({
+            url: `{% url 'custom_admin:pack_toggle_status' 0 %}`.replace('0', packId),
+            type: 'POST',
+            data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+            success: function(response) {
+                showToast(`Pack ${action} avec succès !`, 'success');
+                setTimeout(() => { location.reload(); }, 1500);
+            },
+            error: function() {
+                showToast('Erreur lors de la modification du statut', 'error');
+            }
+        });
+    }
+}
+
+function duplicatePack(packId) {
+    if (confirm('Voulez-vous créer une copie de ce pack ?')) {
+        $.ajax({
+            url: `{% url 'custom_admin:pack_duplicate' 0 %}`.replace('0', packId),
+            type: 'POST',
+            data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+            success: function(response) {
+                showToast('Pack dupliqué avec succès !', 'success');
+                setTimeout(() => { window.location.href = "{% url 'custom_admin:packs' %}"; }, 1500);
+            },
+            error: function() {
+                showToast('Erreur lors de la duplication', 'error');
+            }
+        });
+    }
+}
+
+function showToast(message, type = 'info') {
+    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
+        window.EsacodeAdmin.showToast(message, type);
+    } else {
+        showToast(message);
+    }
+}
+</script>
+
+<style>
+.pack-icon {
+    background: linear-gradient(135deg, #02A195 0%, #0b8a7a 100%);
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.pack-icon i {
+    color: white !important;
+}
+
+.price-display {
+    margin: 1.5rem 0;
+}
+
+.status-badges .badge {
+    margin: 0 0.25rem;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -37px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    margin-left: 10px;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.timeline-text {
+    margin-bottom: 5px;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
