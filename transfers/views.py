@@ -35,6 +35,27 @@ WALLET_MAP = {
     'wave': 'wave-ci',
     'mtn': 'mtn-ci',
     'moov': 'moov-ci',
+    
+    # 🇸🇳 Sénégal
+    'orange-sénégal': 'orange-money-senegal',
+    'wave-sénégal': 'wave-senegal',
+    'free-money-sénégal': 'free-money-senegal',
+    'emoney-sénégal': 'expresso-senegal',
+
+    # 🇧🇯 Bénin
+    'mtn-bénin': 'mtn-benin',
+    'moov-bénin': 'moov-benin',
+
+    # 🇹🇬 Togo
+    'tmoney-togo': 't-money-togo',
+    'moov-togo': 'moov-togo',
+
+    # 🇧🇫 Burkina Faso
+    'orange-faso': 'orange-money-burkina',
+    'moov-faso': 'moov-burkina-faso',
+
+    # 🇲🇱 Mali
+    'orange-mali': 'orange-money-mali'
 }
 
 
@@ -63,16 +84,18 @@ class InitiateTransferView(APIView):
         data = request.data
         amount = Decimal(data.get('amount', 0))
         from_key = data.get('from_wallet')
-        to_key = data.get('to_wallet')
-
-        if not all([amount > 0, from_key, to_key]):
-            return Response({"error": "Données invalides"}, status=400)
+        to_key = data.get('to_wallet')  # ex: "MTN MoMo BJ"
+        
 
         try:
             from_fee = OperatorFees.objects.get(operator=from_key)
+        except OperatorFees.DoesNotExist:
+            return Response({"error": "Frais non sender configurés"}, status=500)
+        
+        try:
             to_fee = OperatorFees.objects.get(operator=to_key)
         except OperatorFees.DoesNotExist:
-            return Response({"error": "Frais non configurés"}, status=500)
+            return Response({"error": "Frais non receiver configurés"}, status=500)
 
         OUR_MARGIN = Decimal('1.5')
         our_fee_percent = from_fee.our_fee_percent
