@@ -3,22 +3,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from users.models import UserProfile
 from .models import Transfer, OperatorFees
+from .serializers import TransferSerializer
 from paydunya.client import PayDunyaClient
 from decimal import Decimal
-import json
 import logging
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+import time
 from django.conf import settings
 from threading import Thread
 import requests
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from users.models import UserProfile
-from .models import Transfer
-from .serializers import TransferSerializer  # Import the new serializer
 
 
 
@@ -90,12 +82,12 @@ class InitiateTransferView(APIView):
         try:
             from_fee = OperatorFees.objects.get(operator=from_key)
         except OperatorFees.DoesNotExist:
-            return Response({"error": "Frais non sender configurés"}, status=500)
-        
+            return Response({"error": f"Opérateur '{from_key}' non configuré. Contactez le support."}, status=500)
+
         try:
             to_fee = OperatorFees.objects.get(operator=to_key)
         except OperatorFees.DoesNotExist:
-            return Response({"error": "Frais non receiver configurés"}, status=500)
+            return Response({"error": f"Opérateur destinataire '{to_key}' non configuré. Contactez le support."}, status=500)
 
         OUR_MARGIN = Decimal('1.5')
         our_fee_percent = from_fee.our_fee_percent
@@ -130,7 +122,7 @@ class InitiateTransferView(APIView):
         if invoice.get('response_code') != '00':
             transfer.status = 'failed'
             transfer.save()
-            return Response({"error": "Échec facture"}, status=500)
+            return Response({"error": "Impossible de préparer le paiement. Réessayez dans quelques instants."}, status=500)
 
         transfer.paydunya_invoice_token = invoice['token']
         transfer.status = 'invoice_sent'
@@ -174,11 +166,12 @@ class ConfirmDebitView(APIView):
         )
 
         if not response.get('success'):
-            print("❌ Paiement échoué — détails :")
-            print(json.dumps(response, indent=4, ensure_ascii=False))
+            logger.error(f"PAIEMENT ÉCHOUÉ → MB{transfer.id} → {response}")
             transfer.status = 'failed'
             transfer.save()
-            return Response({"error": "Paiement échoué", "details": response}, status=400)
+            paydunya_msg = response.get('message', '')
+            user_msg = paydunya_msg if paydunya_msg else "Paiement refusé par l'opérateur. Vérifiez votre solde ou réessayez."
+            return Response({"error": user_msg}, status=400)
 
         # Wave → on attend le webhook
         if transfer.from_wallet == 'wave-ci':
@@ -197,56 +190,35 @@ class ConfirmDebitView(APIView):
                 "status": "pending_wave"
             })
 
-        # Orange/Moov/MTN → débit immédiat → on lance le crédit tout de suite
-        transfer.status = 'debited'
-        transfer.paydunya_payment_ref = response.get('transaction_id', '')
-        transfer.save()
-        Thread(target=_launch_credit, args=(transfer,)).start()
+        # 2. ORANGE / MOOV : débit immédiat après OTP/PIN (popup ou OTP saisi)
+        elif transfer.from_wallet in ['orange-money-ci', 'moov-ci']:
+            transfer.status = 'debited'
+            transfer.paydunya_payment_ref = response.get('transaction_id', '')
+            transfer.save()
+            Thread(target=_launch_credit, args=(transfer,)).start()
+            return Response({
+                "message": "Paiement réussi ! Crédit en cours...",
+                "status": "debited"
+            })
 
-        return Response({
-            "message": "Paiement réussi ! Crédit en cours...",
-            "status": "debited"
-        })
+        # 3. MTN : paiement silencieux → pas de débit immédiat, on attend confirmation
+        elif transfer.from_wallet == 'mtn-ci':
+            transfer.status = 'pending_mtn'  # ← Nouveau statut spécifique
+            transfer.paydunya_payment_ref = response.get('transaction_id', '')
+            transfer.save()
+            
+            # Lance polling spécifique pour MTN (similaire à Wave)
+            Thread(target=_poll_mtn_payment, args=(transfer,)).start()
 
+            return Response({
+                "message": "Paiement MTN en cours de validation automatique. Pas d’action requise.",
+                "status": "pending_mtn"
+            })
 
-
-
-@csrf_exempt
-def _launch_credit(transfer):
-    if transfer.status not in ['debited', 'pending_wave']:
-        return
-
-    client = PayDunyaClient()
-    try:
-        disburse = client.disburse_create(
-            phone=transfer.to_phone,
-            amount=int(transfer.amount_sent),
-            mode=transfer.to_wallet,
-            callback_url="https://buudi.africa/api/v1/webhook-paydunya",  # DYNAMIQUE
-            disburse_id=f"MB{transfer.id}"
-        )
-
-        if disburse.get('response_code') == '00':
-            submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
-            if submit.get('response_code') == '00':
-                transfer.disburse_token = disburse['disburse_token']
-                transfer.disburse_id = f"MB{transfer.id}"
-                transfer.status = 'disbursing'
-                transfer.save()
-                logger.info(f"CRÉDIT AUTOMATIQUE LANCÉ → MB{transfer.id}")
-                return
-
-        transfer.status = 'failed'
-        transfer.save()
-        logger.error(f"ÉCHEC CRÉDIT → {disburse} | {submit}")
-    except Exception as e:
-        transfer.status = 'failed'
-        transfer.save()
-        logger.error(f"ERREUR FATALE CRÉDIT → {e}", exc_info=True)
+        else:
+            return Response({"error": "Opérateur non supporté pour confirmation"}, status=400)
 
 
-  
-import time
 
 def _launch_credit(transfer):
     if transfer.status not in ['debited', 'pending_wave']:
@@ -254,67 +226,92 @@ def _launch_credit(transfer):
         return
 
     client = PayDunyaClient()
+    disburse_id = f"MB{transfer.id}"
 
+    # 1. Création du déboursement — retry 3x sur timeout (disburse_id = clé idempotente)
+    disburse = None
+    for attempt in range(1, 4):
+        try:
+            disburse = client.disburse_create(
+                phone=transfer.to_phone,
+                amount=int(transfer.amount_sent),
+                mode=transfer.to_wallet,
+                callback_url="https://buudi.africa/api/v1/webhook-paydunya",
+                disburse_id=disburse_id
+            )
+            break
+        except requests.exceptions.Timeout:
+            logger.warning(f"TIMEOUT disburse_create tentative {attempt}/3 → {disburse_id}")
+            if attempt < 3:
+                time.sleep(5 * attempt)
+            else:
+                # L'user est débité mais le crédit n'a pas pu être lancé → retryable
+                transfer.status = 'credit_failed'
+                transfer.save()
+                logger.error(f"TIMEOUT DÉFINITIF disburse_create → {disburse_id} → statut: credit_failed")
+                return
+        except Exception as e:
+            transfer.status = 'credit_failed'
+            transfer.save()
+            logger.error(f"ERREUR disburse_create → {disburse_id} → {e}", exc_info=True)
+            return
+
+    if disburse.get('response_code') != '00':
+        transfer.status = 'credit_failed'
+        transfer.save()
+        logger.error(f"ÉCHEC disburse_create → {disburse}")
+        return
+
+    # 2. Soumission
     try:
-        # 1. Création du déboursement
-        disburse = client.disburse_create(
-            phone=transfer.to_phone,
-            amount=int(transfer.amount_sent),
-            mode=transfer.to_wallet,
-            callback_url="https://buudi.africa/api/v1/webhook-paydunya",  # DYNAMIQUE
-            disburse_id=f"MB{transfer.id}"
-        )
-
-        if disburse.get('response_code') != '00':
-            transfer.status = 'failed'
-            transfer.save()
-            logger.error(f"ÉCHEC disburse_create → {disburse}")
-            return
-
-        # 2. Soumission
-        submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
-        if submit.get('response_code') != '00':
-            transfer.status = 'failed'
-            transfer.save()
-            logger.error(f"ÉCHEC disburse_submit → {submit}")
-            return
-
-        # 3. On sauvegarde le token et on passe en disbursing
+        submit = client.disburse_submit(disburse['disburse_token'], disburse_id)
+    except requests.exceptions.Timeout:
+        # Le disburse existe côté PayDunya — on sauvegarde le token pour suivi
         transfer.disburse_token = disburse['disburse_token']
-        transfer.disburse_id = f"MB{transfer.id}"
-        transfer.status = 'disbursing'
+        transfer.disburse_id = disburse_id
+        transfer.status = 'credit_failed'
         transfer.save()
-
-        logger.info(f"CRÉDIT LANCÉ → MB{transfer.id} | Token: {disburse['disburse_token'][-10:]}... | Polling en cours...")
-
-        # 4. POLLING ACTIF → on vérifie toutes les 3 sec pendant max 60 sec
-        max_attempts = 20  # 20 × 3 sec = 60 sec
-        for attempt in range(max_attempts):
-            time.sleep(3)
-            
-            check = client.check_status(disburse['disburse_token'])
-            logger.info(f"Check status tentative {attempt + 1}/20 → {check}")
-
-            if check.get('response_code') == '00':
-                real_status = check.get('status')
-                if real_status == 'success':
-                    transfer.status = 'success'
-                    transfer.save()
-                    logger.info(f"SUCCÈS CONFIRMÉ PAR POLLING → MB{transfer.id}")
-                    return
-                elif real_status == 'failed':
-                    transfer.status = 'failed'
-                    transfer.save()
-                    logger.error(f"ÉCHEC CONFIRMÉ PAR POLLING → MB{transfer.id}")
-                    return
-
-        # Si après 60 sec toujours rien → on marque en attente mais on ne bloque pas
-        logger.warning(f"Timeout polling – statut reste 'disbursing' pour MB{transfer.id} (le webhook finira le job si il arrive)")
-
+        logger.error(f"TIMEOUT disburse_submit → {disburse_id} → token sauvegardé, statut: credit_failed")
+        return
     except Exception as e:
-        transfer.status = 'failed'
+        transfer.status = 'credit_failed'
         transfer.save()
-        logger.error(f"ERREUR FATALE CRÉDIT → {e}", exc_info=True)        
+        logger.error(f"ERREUR disburse_submit → {disburse_id} → {e}", exc_info=True)
+        return
+
+    if submit.get('response_code') != '00':
+        transfer.status = 'credit_failed'
+        transfer.save()
+        logger.error(f"ÉCHEC disburse_submit → {submit}")
+        return
+
+    # 3. Token sauvegardé → passage en disbursing
+    transfer.disburse_token = disburse['disburse_token']
+    transfer.disburse_id = disburse_id
+    transfer.status = 'disbursing'
+    transfer.save()
+    logger.info(f"CRÉDIT LANCÉ → {disburse_id} | Token: {disburse['disburse_token'][-10:]}... | Polling en cours...")
+
+    # 4. Polling confirmation (20 × 3s = 60s)
+    for attempt in range(20):
+        time.sleep(3)
+        check = client.check_status(disburse['disburse_token'])
+        logger.info(f"Check status tentative {attempt + 1}/20 → {check}")
+
+        if check.get('response_code') == '00':
+            real_status = check.get('status')
+            if real_status == 'success':
+                transfer.status = 'success'
+                transfer.save()
+                logger.info(f"SUCCÈS CONFIRMÉ PAR POLLING → {disburse_id}")
+                return
+            elif real_status == 'failed':
+                transfer.status = 'credit_failed'
+                transfer.save()
+                logger.error(f"ÉCHEC CONFIRMÉ PAR POLLING → {disburse_id}")
+                return
+
+    logger.warning(f"Timeout polling – statut reste 'disbursing' pour {disburse_id} (webhook attendu)")        
         
         
         
@@ -342,7 +339,46 @@ def _poll_wave_payment(transfer):
     # Si après 2 min toujours rien → on abandonne (l'utilisateur a fermé l'app)
     transfer.status = 'failed'
     transfer.save()
-    logger.warning(f"Timeout polling Wave – paiement non confirmé pour MB{transfer.id}")        
+    logger.warning(f"Timeout polling Wave – paiement non confirmé pour MB{transfer.id}")    
+    
+    
+    
+    
+    
+def _poll_mtn_payment(transfer):
+    """
+    Polling spécifique pour MTN CI : attend la confirmation du paiement silencieux.
+    Similaire à _poll_wave_payment mais adapté à MTN (pas de redirection, pas d'URL).
+    """
+    client = PayDunyaClient()
+    token = transfer.paydunya_invoice_token
+    max_attempts = 40  # 40 × 4 sec = ~2 min 40 s max (comme Wave)
+
+    for attempt in range(max_attempts):
+        time.sleep(4)  # même délai que Wave
+
+        status_check = client.check_invoice_status(token)
+        logger.info(f"Polling MTN paiement tentative {attempt + 1} → {status_check.get('status')}")
+
+        if status_check.get('status') == 'completed':
+            logger.info(f"MTN PAIEMENT CONFIRMÉ PAR POLLING → Lancement crédit pour MB{transfer.id}")
+            _launch_credit(transfer)  # réutilise ta fonction existante
+            transfer.status = 'debited'  # ou 'success' selon ton modèle
+            transfer.save()
+            return
+
+        elif status_check.get('status') in ['cancelled', 'failed', 'expired']:
+            transfer.status = 'failed'
+            transfer.save()
+            logger.warning(f"MTN PAIEMENT ANNULÉ/ÉCHEC → MB{transfer.id}")
+            return
+
+        
+
+    # Timeout : après ~2min40, on considère ça comme échoué
+    transfer.status = 'failed'
+    transfer.save()
+    logger.warning(f"Timeout polling MTN – paiement non confirmé pour MB{transfer.id}")        
         
         
         
@@ -350,20 +386,38 @@ def _poll_wave_payment(transfer):
 
 
 
-# transfers/views.py
 class TransferStatusView(APIView):
     def get(self, request, transfer_id):
         try:
             transfer = Transfer.objects.get(id=transfer_id)
-            
-            is_final = transfer.status in ['success', 'failed']
-            
+
+            # Live check PayDunya quand le crédit est en cours —
+            # chaque poll Flutter devient une vérification active (ex: payout Wave lent)
+            if transfer.status == 'disbursing' and transfer.disburse_token:
+                try:
+                    client = PayDunyaClient()
+                    check = client.check_status(transfer.disburse_token)
+                    if check.get('response_code') == '00':
+                        real_status = check.get('status')
+                        if real_status == 'success':
+                            transfer.status = 'success'
+                            transfer.save()
+                            logger.info(f"LIVE CHECK → SUCCÈS → MB{transfer.id}")
+                        elif real_status == 'failed':
+                            transfer.status = 'credit_failed'
+                            transfer.save()
+                            logger.error(f"LIVE CHECK → ÉCHEC CRÉDIT → MB{transfer.id}")
+                except Exception as e:
+                    logger.warning(f"Live check échoué MB{transfer.id}: {e}")
+
+            is_final = transfer.status in ['success', 'failed', 'credit_failed']
+
             return Response({
                 "status": transfer.status,
                 "message": "Transfert terminé" if is_final else "En cours...",
-                "final": is_final  # ← booléen propre en minuscule
+                "final": is_final
             })
-            
+
         except Transfer.DoesNotExist:
             return Response({"error": "Transfert non trouvé"}, status=404)      
         
@@ -406,53 +460,30 @@ class FeesConfigView(APIView):
         
         
 class CreditReceiverView(APIView):
+    """Retry manuel du crédit pour les transferts bloqués (debited / credit_failed)."""
     def post(self, request):
         transfer_id = request.data.get('transfer_id')
         try:
             transfer = Transfer.objects.get(id=transfer_id)
         except Transfer.DoesNotExist:
-            return Response({"error": "Transfert non débité"}, status=404)
+            return Response({"error": "Transfert non trouvé"}, status=404)
 
-        client = PayDunyaClient()
-
-        # URL webhook en prod (ngrok ou domaine)
-        callback_url = "https://buudi.africa/api/v1/webhook-paydunya"
-        try:
-            disburse = client.disburse_create(
-                        phone=transfer.to_phone,
-                        amount=int(transfer.amount_sent),        # CORRIGÉ ICI
-                        mode=transfer.to_wallet,
-                        callback_url=callback_url,
-                        disburse_id=f"MB{transfer.id}"
-                    )            
-        except requests.exceptions.Timeout:
-            return Response({"error": "PayDunya ne répond pas (timeout)"}, status=504)
-        except Exception as e:
-            return Response({"error": "Erreur PayDunya", "details": str(e)}, status=500)
-
-        if disburse.get('response_code') != '00':
+        if transfer.status not in ['debited', 'credit_failed', 'disbursing']:
             return Response({
-                "error": "Échec création déboursement",
-                "details": disburse
-            }, status=500)
+                "error": f"Statut '{transfer.status}' non retryable",
+                "hint": "Seuls debited / credit_failed / disbursing peuvent être relancés"
+            }, status=400)
 
-        submit = client.disburse_submit(disburse['disburse_token'], f"MB{transfer.id}")
-
-        if submit.get('response_code') == '00':
-            status = submit.get('status', 'pending')
-            transfer.disburse_token = disburse['disburse_token']
-            transfer.disburse_id = f"MB{transfer.id}"
-            transfer.status = 'disbursing' if status == 'pending' else 'success'
-            transfer.save()
-            return Response({
-                "message": "Crédit lancé",
-                "status": transfer.status,
-                "disburse_id": f"MB{transfer.id}"
-            })
-
-        transfer.status = 'failed'
+        # Reset pour permettre le retry dans _launch_credit
+        transfer.status = 'debited'
         transfer.save()
-        return Response({"error": "Échec soumission", "details": submit}, status=500)
+
+        Thread(target=_launch_credit, args=(transfer,)).start()
+        return Response({
+            "message": "Retry crédit lancé en arrière-plan",
+            "transfer_id": transfer.id,
+            "disburse_id": f"MB{transfer.id}"
+        })
     
     
 

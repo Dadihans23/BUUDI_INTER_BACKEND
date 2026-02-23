@@ -22,9 +22,12 @@ class Transfer(models.Model):
         ('created', 'Créé'),
         ('invoice_sent', 'Facture envoyée'),
         ('debited', 'Débité'),
+        ('pending_wave', 'En attente Wave'),
+        ('pending_mtn', 'En attente MTN'),
         ('disbursing', 'En cours de crédit'),
         ('success', 'Réussi'),
-        ('failed', 'Échoué'),
+        ('failed', 'Paiement refusé'),
+        ('credit_failed', 'Débité – Crédit échoué'),
     ]
 
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)

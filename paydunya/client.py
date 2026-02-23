@@ -55,16 +55,24 @@ class PayDunyaClient:
             data[f"{wallet_key}_phone"] = phone
             data[f"{wallet_key}_payment_token"] = token
         else:
-            # ORANGE/MOOV/MTN : customer_fullname + phone_number + otp
             data[f"{wallet_key}_customer_fullname"] = fullname
             data[f"{wallet_key}_phone_number"] = phone
             data[f"{wallet_key}_otp"] = otp or ""
+
+            # AJOUT OBLIGATOIRE POUR MTN CI
+            if 'mtn' in wallet.lower():
+                data[f"{wallet_key}_wallet_provider"] = "MTNCI"  # ← LA LIGNE QUI MANQUAIT
+
             data["payment_token"] = token
 
         # === DEBUG ===
         print("DEBUG SOFTPAY DATA:", data)
 
         response = requests.post(url, json=data, headers=self.headers)
+        
+      
+        
+        
 
         print("\n=== PAYDUNYA SOFTPAY DEBUG ===")
         print(f"URL: {url}")

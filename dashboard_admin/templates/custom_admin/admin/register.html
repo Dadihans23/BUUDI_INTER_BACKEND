@@ -1,38 +1,37 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Inscription - Cabinet Dentaire</title>
-    
+   
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+   
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+   
     <style>
         body {
             background: linear-gradient(135deg, #3A2B20, #7E6A52);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: system-ui, -apple-system, sans-serif;
         }
         .register-card {
-            max-width: 480px;
+            max-width: 420px;
             width: 100%;
             border-radius: 16px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.35);
             overflow: hidden;
         }
         .register-header {
-            background: #3A2B20; /* Charcoal Clay */
-            color: #DACFB6; /* Creamy Taupe */
-            padding: 2.5rem 1.5rem;
+            background: #3A2B20;
+            color: #DACFB6;
+            padding: 1.2rem 1rem;
             text-align: center;
         }
         .register-header h3 {
@@ -41,37 +40,62 @@
             letter-spacing: 0.5px;
         }
         .register-header p {
-            margin: 0.5rem 0 0;
+            margin: 0.1rem 0 0;
             opacity: 0.85;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
         .register-body {
-            padding: 2.5rem 2rem;
-            background: #DACFB6; /* Creamy Taupe */
+            padding: 1.8rem 1.4rem;
+            background: #DACFB6;
             color: #3A2B20;
         }
+
+        /* Ajustements pour écrans larges (PC / desktop) */
+        @media (min-width: 768px) {
+            .register-card {
+                max-width: 480px;               /* largeur confortable sur PC */
+            }
+            .register-header {
+                padding: 1.8rem 2rem;
+            }
+            .register-body {
+                padding: 2.2rem 2.5rem;         /* plus d'espace horizontal */
+            }
+            .form-control, .form-select {
+                height: calc(1.5em + 0.9rem + 2px);
+            }
+            .mb-2 { margin-bottom: 1.25rem !important; }
+            .btn-lg {
+                padding: 0.85rem 1.5rem;
+                font-size: 1.1rem;
+            }
+        }
+
         .form-label {
             font-weight: 600;
-            color: #7E6A52; /* Rustic Taupe */
+            color: #7E6A52;
+            margin-bottom: 0.35rem;
         }
         .form-control, .form-select {
-            border-color: #B89C82; /* Warm Beige */
+            border-color: #B89C82;
             background: #fff;
         }
         .form-control:focus, .form-select:focus {
             border-color: #B89C82;
-            box-shadow: 0 0 0 0.25rem rgba(184, 156, 130, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(184, 156, 130, 0.25);
         }
         .btn-primary {
-            background: #B89C82; /* Warm Beige */
+            background: #B89C82;
             border: none;
             font-weight: 600;
         }
         .btn-primary:hover {
-            background: #7E6A52; /* Rustic Taupe */
+            background: #7E6A52;
         }
         .alert {
             border-radius: 8px;
+            font-size: 0.9rem;
+            padding: 0.6rem 1rem;
         }
         .text-link {
             color: #B89C82;
@@ -80,6 +104,15 @@
         .text-link:hover {
             color: #7E6A52;
             text-decoration: underline;
+        }
+
+        @media (max-width: 400px) {
+            .register-body {
+                padding: 1.4rem 1.2rem;
+            }
+            .register-header {
+                padding: 1rem 0.8rem;
+            }
         }
     </style>
 </head>
@@ -90,7 +123,7 @@
         <h3>📝 Inscription</h3>
         <p>Gestion du Cabinet Dentaire</p>
     </div>
-    
+   
     <div class="register-body">
         {% if messages %}
             {% for message in messages %}
@@ -104,58 +137,64 @@
         <form method="post">
             {% csrf_token %}
 
+            <!-- Prénom + Nom (déjà en row) -->
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-2">
                     <label class="form-label">Prénom</label>
                     <input type="text" name="prenom" class="form-control form-control-lg" required autofocus>
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-2">
                     <label class="form-label">Nom</label>
                     <input type="text" name="nom" class="form-control form-control-lg" required>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Téléphone</label>
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light border-end-0">
-                        <span class="material-icons">phone</span>
-                    </span>
-                    <input type="text" name="telephone" class="form-control" placeholder="+225 ..." required>
+            <!-- Téléphone + Email en row sur PC -->
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Téléphone</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0">
+                            <span class="material-icons">phone</span>
+                        </span>
+                        <input type="text" name="telephone" class="form-control" placeholder="+225 ..." required>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Email (optionnel)</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0">
+                            <span class="material-icons">email</span>
+                        </span>
+                        <input type="email" name="email" class="form-control">
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Email (optionnel)</label>
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light border-end-0">
-                        <span class="material-icons">email</span>
-                    </span>
-                    <input type="email" name="email" class="form-control">
+            <!-- Rôle + Mot de passe en row sur PC -->
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Rôle</label>
+                    <select name="role" class="form-select form-select-lg" required>
+                        <option value="" disabled selected>Choisir un rôle</option>
+                        <option value="dentiste">Dentiste</option>
+                        <option value="secretaire">Secrétaire</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Mot de passe</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light border-end-0">
+                            <span class="material-icons">lock</span>
+                        </span>
+                        <input type="password" name="password1" class="form-control" minlength="8" required>
+                    </div>
+                    <small class="text-muted d-block mt-1">Minimum 8 caractères</small>
                 </div>
             </div>
 
+            <!-- Confirmation mot de passe (seul ou en row si tu veux l'associer à autre chose) -->
             <div class="mb-3">
-                <label class="form-label">Rôle</label>
-                <select name="role" class="form-select form-select-lg" required>
-                    <option value="" disabled selected>Choisir un rôle</option>
-                    <option value="dentiste">Dentiste</option>
-                    <option value="secretaire">Secrétaire</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Mot de passe</label>
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light border-end-0">
-                        <span class="material-icons">lock</span>
-                    </span>
-                    <input type="password" name="password1" class="form-control" minlength="8" required>
-                </div>
-                <small class="text-muted d-block mt-1">Minimum 8 caractères</small>
-            </div>
-
-            <div class="mb-4">
                 <label class="form-label">Confirmation mot de passe</label>
                 <div class="input-group input-group-lg">
                     <span class="input-group-text bg-light border-end-0">
@@ -171,7 +210,7 @@
             </button>
         </form>
 
-        <div class="text-center mt-4">
+        <div class="text-center mt-3">
             <small class="text-muted">
                 Déjà un compte ? <a href="{% url 'login' %}" class="text-link">Se connecter</a>
             </small>
