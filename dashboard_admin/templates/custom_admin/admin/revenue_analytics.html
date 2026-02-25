@@ -1,318 +1,177 @@
 {% extends 'custom_admin/base_common.html' %}
-{% load static %}
-
-{% block title %}Analytics Revenus - Transfert Admin{% endblock %}
-
-{% block extra_css %}
-<link type="text/css" href="{% static 'custom_admin/css/plugins/apexcharts.css' %}" rel="stylesheet">
-{% endblock %}
-
-
-{% block sidebar_menu %}
-<!-- Dashboard -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-        <i class="menu-icon mdi mdi-view-dashboard"></i><span>Tableau de bord</span>
-    </a>
-</li>
-
-<!-- Utilisateurs -->
-<li class="accordion-menu-item has-submenu {% if 'user' in request.path %}opened{% endif %}">
-    <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
-        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
-        <i class="mdi mdi-chevron-down accordion-arrow"></i>
-    </a>
-    <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
-        <li><a href="{% url 'custom_admin:users' %}" class="{% if request.resolver_match.url_name in 'users user_detail user_edit user_create' %}active{% endif %}">Liste des utilisateurs</a></li>
-        <li><a href="{% url 'custom_admin:user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Ajouter un utilisateur</a></li>
-    </ul>
-</li>
-
-<!-- Transferts -->
-<li class="accordion-menu-item has-submenu {% if 'transfer' in request.path %}opened{% endif %}">
-    <a href="#" class="accordion-toggle {% if 'transfer' in request.path %}opened{% endif %}">
-        <i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span>
-        <i class="mdi mdi-chevron-down accordion-arrow"></i>
-    </a>
-    <ul class="sub-menu" {% if 'transfer' in request.path %}style="display: block;"{% endif %}>
-        <li><a href="{% url 'custom_admin:transfers' %}" class="{% if request.resolver_match.url_name in 'transfers transfer_detail transfer_edit transfer_delete transfer_retry' %}active{% endif %}">Tous les transferts</a></li>
-    </ul>
-</li>
-
-<!-- Frais Opérateurs -->
-<li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
-    <a href="{% url 'custom_admin:fees' %}">
-        <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
-    </a>
-</li>
-
-<!-- Analytics Revenus -->
-<li class="accordion-menu-item {% if request.resolver_match.url_name == 'revenue_analytics' %}active{% endif %}">
-    <a href="{% url 'custom_admin:revenue_analytics' %}">
-        <i class="menu-icon mdi mdi-chart-line"></i><span>Analytics Revenus</span>
-    </a>
-</li>
-
-<!-- Paramètres -->
-<li class="accordion-menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-    <a href="{% url 'custom_admin:settings' %}">
-        <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
-    </a>
-</li>
-
-<!-- Admin Django -->
-<li class="accordion-menu-item">
-    <a href="{% url 'admin:index' %}">
-        <i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span>
-    </a>
-</li>
-{% endblock %}
-
+{% block title %}Analytiques — Buudi Admin{% endblock %}
+{% block breadcrumb %}Analytiques{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title mb-15">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">📈 Analytics Revenus & Performance</h2>
-                        <p class="text-muted mb-0">Insights puissants pour piloter votre stratégie de croissance</p>
-                    </div>
-                    <button class="btn btn-outline-primary" onclick="location.reload()">
-                        <i class="mdi mdi-refresh"></i> Actualiser
-                    </button>
-                </div>
-            </div>
-        </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Analytiques de revenus</h1>
+    <p class="page-subtitle">Performance financière et flux de transferts</p>
+  </div>
+  <form method="GET" class="d-flex gap-2 align-items-end flex-wrap">
+    <div>
+      <label class="form-label">Du</label>
+      <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date|default:'' }}">
     </div>
-
-    <!-- Filtres Date -->
-    <div class="card border mb-4">
-        <div class="card-body">
-            <form method="GET" class="d-flex gap-3 align-items-end flex-wrap">
-                <div>
-                    <label class="form-label">Du</label>
-                    <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
-                </div>
-                <div>
-                    <label class="form-label">Au</label>
-                    <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="mdi mdi-filter"></i> Appliquer
-                </button>
-                <a href="{% url 'custom_admin:revenue_analytics' %}" class="btn btn-outline-secondary">
-                    Réinitialiser
-                </a>
-            </form>
-        </div>
+    <div>
+      <label class="form-label">Au</label>
+      <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date|default:'' }}">
     </div>
-
-    <!-- Stats Globales -->
-    <div class="row">
-        <div class="col-md-3 mb-4">
-            <div class="card border h-100">
-                <div class="card-body text-center">
-                    <h5 class="text-muted mb-2">Revenus Totaux (Notre marge)</h5>
-                    <h3 class="text-success fw-bold">{{ total_revenue|floatformat:0 }} FCFA</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card border h-100">
-                <div class="card-body text-center">
-                    <h5 class="text-muted mb-2">Volume Total Transféré</h5>
-                    <h3 class="text-primary fw-bold">{{ total_volume|floatformat:0 }} FCFA</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card border h-100">
-                <div class="card-body text-center">
-                    <h5 class="text-muted mb-2">Revenu Moyen / Transfert</h5>
-                    <h3 class="text-info fw-bold">{{ average_revenue_per_transfer|floatformat:0 }} FCFA</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card border h-100">
-                <div class="card-body text-center">
-                    <h5 class="text-muted mb-2">Taux d'Échec</h5>
-                    <h3 class="text-danger fw-bold">{{ failure_rate|floatformat:1 }}%</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Diagrammes Circulaires (Répartition) -->
-    <div class="row">
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Répartition des Revenus par Opérateur Payin</h5>
-                </div>
-                <div class="card-body">
-                    <div id="pieRevenuePayin"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Répartition des Revenus par Opérateur Payout</h5>
-                </div>
-                <div class="card-body">
-                    <div id="pieRevenuePayout"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Répartition de l'Usage Payin</h5>
-                </div>
-                <div class="card-body">
-                    <div id="pieUsagePayin"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Répartition de l'Usage Payout</h5>
-                </div>
-                <div class="card-body">
-                    <div id="pieUsagePayout"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Barres + Lignes (évolution) -->
-    <div class="row">
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5>Affluence par Jour</h5>
-                </div>
-                <div class="card-body">
-                    <div id="lineDayChart"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6 mb-4">
-            <div class="card border">
-                <div class="card-header bg-light">
-                    <h5>Affluence par Heure (moyenne)</h5>
-                </div>
-                <div class="card-body">
-                    <div id="lineHourChart"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Insights Stratégiques -->
-    <div class="card border">
-        <div class="card-header bg-gradient-primary text-white">
-            <h5 class="mb-0">🔥 Insights & Recommandations Stratégiques</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span><i class="mdi mdi-star text-warning me-2"></i><strong>Jour le plus actif</strong></span>
-                            <span class="badge bg-warning">{{ peak_day.day|date:"d/m/Y" }} ({{ peak_day.count }} transferts)</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span><i class="mdi mdi-clock text-info me-2"></i><strong>Heure de pointe</strong></span>
-                            <span class="badge bg-info">{{ peak_hour.hour|time:"H" }}h ({{ peak_hour.count }} transferts)</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span><i class="mdi mdi-trending-up text-success me-2"></i><strong>Opérateur Payin le plus rentable</strong></span>
-                            <strong class="text-success">{{ revenue_by_payin.0.from_wallet|upper }} ({{ revenue_by_payin.0.revenue|floatformat:0 }} FCFA)</strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+    {% if from_date or to_date %}
+    <a href="{% url 'custom_admin:revenue_analytics' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+    {% endif %}
+  </form>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'custom_admin/js/plugins/apexcharts.min.js' %}"></script>
-<script>
-// Fonction générique pour Pie Chart
-function createPieChart(id, labels, data, title) {
-    var options = {
-        series: data,
-        chart: { type: 'pie', height: 380 },
-        labels: labels,
-        legend: { position: 'bottom' },
-        dataLabels: {
-            enabled: true,
-            formatter: function (val) { return val.toFixed(1) + "%" }
-        },
-        title: { text: title, align: 'center', style: { fontSize: '16px', fontWeight: 'bold' } },
-        colors: ['#0d9488', '#198754', '#0d6efd', '#fd7e14', '#dc3545', '#6f42c1'],
-        responsive: [{
-            breakpoint: 480,
-            options: { chart: { width: 300 }, legend: { position: 'bottom' } }
-        }]
-    };
-    var chart = new ApexCharts(document.querySelector('#' + id), options);
-    chart.render();
-}
+<!-- KPIs principaux -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--green-10);"><i class="mdi mdi-cash-multiple" style="color:var(--green);"></i></div>
+        <div>
+          <div class="stat-value" style="color:var(--green);">{{ total_revenue|floatformat:0 }} F</div>
+          <div class="stat-label">Revenu total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--teal-10);"><i class="mdi mdi-swap-horizontal" style="color:var(--teal);"></i></div>
+        <div>
+          <div class="stat-value">{{ total_volume|floatformat:0 }} F</div>
+          <div class="stat-label">Volume total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--blue-10);"><i class="mdi mdi-trending-up" style="color:var(--blue);"></i></div>
+        <div>
+          <div class="stat-value" style="color:var(--blue);">{{ average_revenue_per_transfer|floatformat:0 }} F</div>
+          <div class="stat-label">Revenu / transfert</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--red-10);"><i class="mdi mdi-close-circle-outline" style="color:var(--red);"></i></div>
+        <div>
+          <div class="stat-value" style="color:var(--red);">{{ failure_rate|floatformat:1 }}%</div>
+          <div class="stat-label">Taux d'échec</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-// Pie Charts
-createPieChart('pieRevenuePayin', 
-    [{% for r in revenue_by_payin %}'{{ r.from_wallet|upper }}',{% endfor %}], 
-    [{% for r in revenue_by_payin %}{{ r.revenue }},{% endfor %}], 
-    'Répartition des revenus (Payin)');
+<!-- Pics -->
+{% if peak_day or peak_hour %}
+<div class="row g-3 mb-4">
+  {% if peak_day %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="mdi mdi-calendar-star text-teal"></i>Jour le plus actif</div>
+      <div class="card-body text-center" style="padding:24px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--text-1);">{{ peak_day.day|date:"d/m/Y" }}</div>
+        <div style="color:var(--teal);font-size:14px;margin-top:4px;">{{ peak_day.count }} transfert{{ peak_day.count|pluralize }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% if peak_hour %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="mdi mdi-clock-star-four-points-outline text-teal"></i>Heure de pointe</div>
+      <div class="card-body text-center" style="padding:24px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--text-1);">{{ peak_hour.hour|date:"H:i" }}</div>
+        <div style="color:var(--teal);font-size:14px;margin-top:4px;">{{ peak_hour.count }} transfert{{ peak_hour.count|pluralize }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
 
-createPieChart('pieRevenuePayout', 
-    [{% for r in revenue_by_payout %}'{{ r.to_wallet|upper }}',{% endfor %}], 
-    [{% for r in revenue_by_payout %}{{ r.revenue }},{% endfor %}], 
-    'Répartition des revenus (Payout)');
+<!-- Revenue par opérateur -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="mdi mdi-arrow-up-circle-outline text-teal"></i>Revenu par opérateur source (Payin)</div>
+      <div class="card-body p-0">
+        {% for item in revenue_by_payin %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom:1px solid rgba(51,65,85,.5);">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-info">{{ item.from_wallet|upper }}</span>
+            <span style="font-size:13px;color:var(--text-2);">{{ usage_payin|length }} transferts</span>
+          </div>
+          <span style="font-weight:700;color:var(--green);font-size:13px;">{{ item.revenue|floatformat:0 }} F</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:var(--text-3);">Aucune donnée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="mdi mdi-arrow-down-circle-outline text-teal"></i>Revenu par opérateur destination (Payout)</div>
+      <div class="card-body p-0">
+        {% for item in revenue_by_payout %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom:1px solid rgba(51,65,85,.5);">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-success">{{ item.to_wallet|upper }}</span>
+          </div>
+          <span style="font-weight:700;color:var(--green);font-size:13px;">{{ item.revenue|floatformat:0 }} F</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:var(--text-3);">Aucune donnée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
 
-createPieChart('pieUsagePayin', 
-    [{% for u in usage_payin %}'{{ u.from_wallet|upper }}',{% endfor %}], 
-    [{% for u in usage_payin %}{{ u.count }},{% endfor %}], 
-    'Répartition de l\'usage (Payin)');
+<!-- Activité par jour -->
+<div class="card">
+  <div class="card-header"><i class="mdi mdi-chart-bar text-teal"></i>Activité par jour</div>
+  <div class="card-body p-0">
+    {% if affluence_day %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="ps-4">Date</th>
+            <th>Nombre de transferts</th>
+            <th>Barre</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in affluence_day|slice:":15" %}
+          <tr>
+            <td class="ps-4" style="font-weight:600;color:var(--text-1);">{{ item.day|date:"d/m/Y" }}</td>
+            <td><span style="font-weight:700;color:var(--teal);">{{ item.count }}</span></td>
+            <td style="width:40%;">
+              <div style="background:var(--bg-hover);border-radius:4px;height:8px;overflow:hidden;">
+                <div style="height:100%;background:var(--teal);border-radius:4px;width:{{ item.count }}0%;max-width:100%;"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5" style="color:var(--text-3);">Aucune donnée pour la période sélectionnée.</div>
+    {% endif %}
+  </div>
+</div>
 
-createPieChart('pieUsagePayout', 
-    [{% for u in usage_payout %}'{{ u.to_wallet|upper }}',{% endfor %}], 
-    [{% for u in usage_payout %}{{ u.count }},{% endfor %}], 
-    'Répartition de l\'usage (Payout)');
-
-// Line Charts
-function createLineChart(id, labels, data, title, color) {
-    var options = {
-        series: [{ name: 'Transferts', data: data }],
-        chart: { height: 350, type: 'line', zoom: { enabled: false } },
-        stroke: { curve: 'smooth', width: 3 },
-        xaxis: { categories: labels },
-        title: { text: title, align: 'center' },
-        colors: [color],
-        markers: { size: 5 }
-    };
-    var chart = new ApexCharts(document.querySelector('#' + id), options);
-    chart.render();
-}
-
-createLineChart('lineDayChart', 
-    [{% for a in affluence_day %}'{{ a.day|date:"d/m" }}',{% endfor %}], 
-    [{% for a in affluence_day %}{{ a.count }},{% endfor %}], 
-    'Évolution quotidienne', '#0d9488');
-
-createLineChart('lineHourChart', 
-    [{% for a in affluence_hour %}'{{ a.hour|time:"H" }}h',{% endfor %}], 
-    [{% for a in affluence_hour %}{{ a.count }},{% endfor %}], 
-    'Affluence horaire moyenne', '#fd7e14');
-</script>
 {% endblock %}

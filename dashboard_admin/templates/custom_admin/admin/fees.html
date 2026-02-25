@@ -1,102 +1,72 @@
 {% extends 'custom_admin/base_common.html' %}
-{% load static %}
-
-{% block title %}Frais Opérateurs - Transfert Admin{% endblock %}
-
-{% block sidebar_menu %}
-<!-- Dashboard -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:dashboard' %}"><i class="menu-icon mdi mdi-view-dashboard"></i><span>Dashboard</span></a>
-</li>
-
-<!-- Utilisateurs -->
-<li class="accordion-menu-item has-submenu">
-    <a href="#" class="accordion-toggle"><i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span><i class="mdi mdi-chevron-down accordion-arrow"></i></a>
-    <ul class="sub-menu">
-        <li><a href="{% url 'custom_admin:users' %}">Liste des utilisateurs</a></li>
-        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
-    </ul>
-</li>
-
-<!-- Transferts -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:transfers' %}"><i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span></a>
-</li>
-
-<!-- Frais Opérateurs → ACTIF -->
-<li class="accordion-menu-item active">
-    <a href="{% url 'custom_admin:fees' %}"><i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span></a>
-</li>
-
-<!-- Paramètres -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:settings' %}"><i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span></a>
-</li>
-
-<!-- Admin Django -->
-<li class="accordion-menu-item">
-    <a href="{% url 'admin:index' %}"><i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span></a>
-</li>
-{% endblock %}
+{% block title %}Frais opérateurs — Buudi Admin{% endblock %}
+{% block breadcrumb %}Frais opérateurs{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title mb-15">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">📊 Frais par Opérateur</h2>
-                        <p class="text-muted mb-0">Gestion des commissions Payin, Payout et <strong>notre marge</strong> sur chaque transfert</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Frais opérateurs</h1>
+    <p class="page-subtitle">Commission Paydunya (Payin/Payout) et notre marge par opérateur</p>
+  </div>
+  <a href="{% url 'custom_admin:revenue_analytics' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="mdi mdi-chart-line me-1"></i>Voir les analytics
+  </a>
+</div>
 
-    <div class="row">
-        {% for fee in fees %}
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border h-100 shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-uppercase fw-bold">{{ fee.operator }}</h5>
-                    <a href="{% url 'custom_admin:edit_fee' fee.operator %}" class="btn btn-sm btn-outline-primary">
-                        <i class="mdi mdi-pencil"></i> Modifier
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-4 border-end">
-                            <p class="text-muted small mb-1">Payin</p>
-                            <h5 class="text-primary mb-0">{{ fee.payin_fee_percent }}%</h5>
-                        </div>
-                        <div class="col-4 border-end">
-                            <p class="text-muted small mb-1">Payout</p>
-                            <h5 class="text-warning mb-0">{{ fee.payout_fee_percent }}%</h5>
-                        </div>
-                        <div class="col-4">
-                            <p class="text-muted small mb-1">Notre marge</p>
-                            <h5 class="text-success mb-0">{{ fee.our_fee_percent }}%</h5>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="text-center">
-                        <small class="text-muted">
-                            Mis à jour le {{ fee.updated_at|date:"d/m/Y à H:i" }}
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="mdi mdi-percent text-muted" style="font-size: 4rem;"></i>
-                <h5 class="text-muted mt-3">Aucun opérateur configuré</h5>
-                <p class="text-muted">Ajoutez les opérateurs dans le modèle OperatorFees.</p>
-            </div>
-        </div>
-        {% endfor %}
+<div class="card">
+  <div class="card-header"><i class="mdi mdi-percent-outline text-teal"></i>Configuration des frais</div>
+  <div class="card-body p-0">
+    {% if fees %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th class="ps-4">Opérateur</th>
+            <th style="text-align:center;">Frais Payin</th>
+            <th style="text-align:center;">Frais Payout</th>
+            <th style="text-align:center;">Notre commission</th>
+            <th style="text-align:center;">Mis à jour</th>
+            <th style="text-align:center;width:100px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fee in fees %}
+          <tr>
+            <td class="ps-4">
+              <span style="font-weight:700;font-size:14px;color:var(--text-1);">{{ fee.operator|upper }}</span>
+            </td>
+            <td style="text-align:center;">
+              <span style="background:var(--gold-10);color:var(--gold);padding:3px 10px;border-radius:20px;font-weight:700;font-size:13px;">{{ fee.payin_fee_percent }}%</span>
+            </td>
+            <td style="text-align:center;">
+              <span style="background:var(--gold-10);color:var(--gold);padding:3px 10px;border-radius:20px;font-weight:700;font-size:13px;">{{ fee.payout_fee_percent }}%</span>
+            </td>
+            <td style="text-align:center;">
+              <span style="background:var(--green-10);color:var(--green);padding:3px 10px;border-radius:20px;font-weight:700;font-size:13px;">{{ fee.our_fee_percent }}%</span>
+            </td>
+            <td style="text-align:center;font-size:12px;color:var(--text-3);">{{ fee.updated_at|date:"d/m/Y" }}</td>
+            <td style="text-align:center;">
+              <a href="{% url 'custom_admin:edit_fee' fee.operator %}" class="btn btn-outline-secondary btn-sm">
+                <i class="mdi mdi-pencil"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="mdi mdi-percent-outline" style="font-size:3rem;color:var(--text-3);"></i>
+      <p class="mt-3 mb-0" style="color:var(--text-3);">Aucun opérateur configuré</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <i class="mdi mdi-information-outline me-2"></i>
+  Les frais Payin s'appliquent au débit de l'expéditeur. Les frais Payout s'appliquent au crédit du destinataire.
+  Notre commission est notre marge nette sur chaque transfert.
 </div>
 {% endblock %}

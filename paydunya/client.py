@@ -106,13 +106,13 @@ class PayDunyaClient:
             }
 
 
-    def disburse_create(self, phone, amount, callback_url,  mode, disburse_id=None):
+    def disburse_create(self, phone, amount, callback_url, mode, disburse_id=None):
         url = f"{self.base_url}/api/v2/disburse/get-invoice"
         data = {
             "account_alias": phone,
             "amount": int(amount),
             "withdraw_mode": mode,
-            "callback_url": "https://buudi.africa/api/v1/webhook-paydunya"
+            "callback_url": callback_url,  # utilise settings.PAYDUNYA_WEBHOOK_URL passé en paramètre
         }
         if disburse_id:
             data["disburse_id"] = disburse_id
@@ -127,7 +127,7 @@ class PayDunyaClient:
 
     def check_status(self, token):
         url = f"{self.base_url}/api/v2/disburse/check-status"
-        return requests.post(url, json={"disburse_invoice": token}, headers=self.headers).json()
+        return requests.post(url, json={"disburse_invoice": token}, headers=self.headers, timeout=15).json()
     
     
     

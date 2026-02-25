@@ -1,115 +1,49 @@
 {% extends 'custom_admin/base_common.html' %}
-{% load static %}
+{% block title %}Modifier frais {{ fee.operator|upper }} — Buudi Admin{% endblock %}
+{% block breadcrumb %}<a href="{% url 'custom_admin:fees' %}" style="color:var(--text-3);text-decoration:none;">Frais</a> / {{ fee.operator|upper }}{% endblock %}
 
-{% block title %}Modifier frais {{ fee.operator|upper }} - Transfert Admin{% endblock %}
-
-{% block sidebar_menu %}
-<!-- Dashboard -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:dashboard' %}"><i class="menu-icon mdi mdi-view-dashboard"></i><span>Dashboard</span></a>
-</li>
-
-<!-- Utilisateurs -->
-<li class="accordion-menu-item has-submenu">
-    <a href="#" class="accordion-toggle"><i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span><i class="mdi mdi-chevron-down accordion-arrow"></i></a>
-    <ul class="sub-menu">
-        <li><a href="{% url 'custom_admin:users' %}">Liste des utilisateurs</a></li>
-        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
-    </ul>
-</li>
-
-<!-- Transferts -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:transfers' %}"><i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span></a>
-</li>
-
-<!-- Frais Opérateurs → ACTIF -->
-<li class="accordion-menu-item active">
-    <a href="{% url 'custom_admin:fees' %}"><i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span></a>
-</li>
-
-<!-- Paramètres -->
-{% comment %} <li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:settings' %}"><i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span></a>
-</li> {% endcomment %}
-
-<!-- Admin Django -->
-<li class="accordion-menu-item">
-    <a href="{% url 'admin:index' %}"><i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span></a>
-</li>
-{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-xl-8 col-lg-10">
-            <div class="card border shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="mdi mdi-percent me-2"></i>
-                        Configuration des frais — {{ fee.operator|upper }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'custom_admin:fees' %}" class="back-link"><i class="mdi mdi-arrow-left"></i>Retour</a>
+    <h1 class="page-title">Frais — {{ fee.operator|upper }}</h1>
+    <p class="page-subtitle">Configurer les frais Payin, Payout et notre commission</p>
+  </div>
+</div>
 
-                        <div class="row">
-                            <div class="col-md-4 mb-4">
-                                <label class="form-label fw-bold text-primary">Frais Payin (Débit)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.001" min="0" max="100" name="payin_fee_percent" value="{{ fee.payin_fee_percent }}" class="form-control form-control-lg text-center" required>
-                                    <span class="input-group-text">%</span>
-                                </div>
-                                <small class="text-muted">Commission prélevée par l'opérateur lors du débit (ex: Orange → utilisateur)</small>
-                            </div>
-
-                            <div class="col-md-4 mb-4">
-                                <label class="form-label fw-bold text-warning">Frais Payout (Crédit)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.001" min="0" max="100" name="payout_fee_percent" value="{{ fee.payout_fee_percent }}" class="form-control form-control-lg text-center" required>
-                                    <span class="input-group-text">%</span>
-                                </div>
-                                <small class="text-muted">Commission prélevée lors du crédit vers le destinataire</small>
-                            </div>
-
-                            <div class="col-md-4 mb-4">
-                                <label class="form-label fw-bold text-success">Notre commission (Marge)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.001" min="0" max="100" name="our_fee_percent" value="{{ fee.our_fee_percent }}" class="form-control form-control-lg text-center" required>
-                                    <span class="input-group-text">%</span>
-                                </div>
-                                <small class="text-muted">Ta marge ajoutée sur chaque transfert (ex: 1.5% = ton bénéfice)</small>
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="alert alert-info">
-                            <i class="mdi mdi-information-outline me-2"></i>
-                            <strong>Exemple de calcul :</strong><br>
-                            Pour un transfert de 10 000 FCFA avec notre marge à 1.5% :<br>
-                            → Utilisateur paie : 10 150 FCFA<br>
-                            → Tu gagnes : 150 FCFA (notre marge)<br>
-                            → Paydunia prend ses frais payin/payout
-                        </div>
-
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'custom_admin:fees' %}" class="btn btn-outline-secondary btn-lg">
-                                <i class="mdi mdi-arrow-left"></i> Retour
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="mdi mdi-content-save"></i> Sauvegarder
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-footer bg-light text-center">
-                    <small class="text-muted">
-                        Dernière modification : {{ fee.updated_at|date:"d/m/Y à H:i" }}
-                    </small>
-                </div>
-            </div>
-        </div>
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header"><i class="mdi mdi-percent-outline text-teal"></i>Modifier les frais</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Frais Payin (%)</label>
+            <input type="number" name="payin_fee_percent" step="0.001" min="0" max="100"
+                   class="form-control" value="{{ fee.payin_fee_percent }}" required>
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;">Frais prélevés par Paydunya lors du débit de l'expéditeur.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Frais Payout (%)</label>
+            <input type="number" name="payout_fee_percent" step="0.001" min="0" max="100"
+                   class="form-control" value="{{ fee.payout_fee_percent }}" required>
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;">Frais prélevés par Paydunya lors du crédit du destinataire.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Notre commission (%)</label>
+            <input type="number" name="our_fee_percent" step="0.001" min="0" max="100"
+                   class="form-control" value="{{ fee.our_fee_percent }}" required>
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:4px;">Notre marge sur chaque transfert (recommandé : 1.5%).</div>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'custom_admin:fees' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><i class="mdi mdi-content-save me-1"></i>Sauvegarder</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

@@ -15,14 +15,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from dashboard_admin.views import landing_page
+from transfers.views import paydunya_webhook
 
 urlpatterns = [
+    path('', landing_page, name='landing'),
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/transfer/', include('transfers.urls')),
     path('api/dashboard/', include('dashboard_admin.urls')),
 
-
+    # Alias legacy : certains endroits hardcodent /api/v1/webhook-paydunya
+    path('api/v1/webhook-paydunya', paydunya_webhook, name='webhook-paydunya-v1'),
 ]
 
 

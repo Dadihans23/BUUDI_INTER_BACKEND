@@ -1,329 +1,283 @@
-{% extends 'custom_admin/base_admin.html' %}
-{% load static %}
-
-{% block title %}Dashboard - Transfert Admin{% endblock %}
-
-{% block extra_css %}
-<link type="text/css" href="{% static 'custom_admin/css/plugins/apexcharts.css' %}" rel="stylesheet">
-{% endblock %}
+{% extends 'custom_admin/base_common.html' %}
+{% block title %}Dashboard — Buudi Admin{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title mb-15">
-                <div class="d-flex justify-content-md-between justify-content-center py-2">
-                    <div class="d-none d-md-block">
-                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">💸 Dashboard Administrateur</h2>
-                        <p class="text-muted mb-0">Vue d'ensemble de votre plateforme de transfert d'argent</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary refresh-stats" onclick="location.reload()" title="Actualiser">
-                            <i class="mdi mdi-refresh"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Vue d'ensemble de la plateforme Buudi Inter</p>
+  </div>
+  <div class="d-flex gap-3 align-items-end flex-wrap">
+    <!-- Indicateur live -->
+    {% if not from_date and not to_date %}
+    <div id="live-indicator" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-3);padding-bottom:2px;">
+      <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite;"></span>
+      Live — <span id="last-update">à l'instant</span>
+      <button id="btn-pause" onclick="toggleLive()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--text-3);cursor:pointer;">⏸ Pause</button>
     </div>
+    {% else %}
+    <div style="font-size:12px;color:var(--text-3);padding-bottom:2px;">
+      <i class="mdi mdi-filter-outline"></i> Filtré — live désactivé
+    </div>
+    {% endif %}
+    <!-- Filtre date -->
+    <form method="GET" class="d-flex gap-2 align-items-end flex-wrap">
+      <div>
+        <label class="form-label">Du</label>
+        <input type="date" name="from_date" class="form-control form-control-sm" value="{{ from_date|default:'' }}">
+      </div>
+      <div>
+        <label class="form-label">Au</label>
+        <input type="date" name="to_date" class="form-control form-control-sm" value="{{ to_date|default:'' }}">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+      {% if from_date or to_date %}
+      <a href="{% url 'custom_admin:dashboard' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      {% endif %}
+    </form>
+  </div>
 </div>
 
-<!-- FILTRES DATE -->
-<div class="container-fluid">
-    <div class="card border mb-4">
-        <div class="card-body">
-            <form method="GET" class="d-flex gap-3 align-items-end">
-                <div class="form-group">
-                    <label class="form-label">Du</label>
-                    <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Au</label>
-                    <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="mdi mdi-filter"></i> Filtrer
-                </button>
-                <a href="{% url 'custom_admin:dashboard' %}" class="btn btn-outline-secondary">Réinitialiser</a>
-            </form>
+<!-- Stats principales -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--teal-10);">
+          <i class="mdi mdi-swap-horizontal" style="color:var(--teal);"></i>
         </div>
+        <div>
+          <div class="stat-value" id="stat-total">{{ total_transfers }}</div>
+          <div class="stat-label">Total transferts</div>
+        </div>
+      </div>
     </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--green-10);">
+          <i class="mdi mdi-check-circle-outline" style="color:var(--green);"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:var(--green);" id="stat-success">{{ successful_transfers }}</div>
+          <div class="stat-label">Réussis (<span id="stat-rate">{{ success_rate|floatformat:1 }}</span>%)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--gold-10);">
+          <i class="mdi mdi-clock-outline" style="color:var(--gold);"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:var(--gold);" id="stat-pending">{{ pending_transfers }}</div>
+          <div class="stat-label">En cours</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--red-10);">
+          <i class="mdi mdi-close-circle-outline" style="color:var(--red);"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:var(--red);" id="stat-failed">{{ failed_transfers }}</div>
+          <div class="stat-label">Échoués</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- STATISTIQUES PRINCIPALES -->
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ total_users }}</h4>
-                        <p class="text-muted mb-0">Utilisateurs</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-account-multiple"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ total_transfers }}</h4>
-                        <p class="text-muted mb-0">Transferts Total</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-swap-horizontal"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ successful_transfers }}</h4>
-                        <p class="text-muted mb-0">Transferts Réussis</p>
-                    </div>
-                    <div class="widget-icon text-success">
-                        <i class="mdi mdi-check-circle"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ our_revenue|floatformat:0 }} FCFA</h4>
-                        <p class="text-muted mb-0">Nos Bénéfices</p>
-                    </div>
-                    <div class="widget-icon text-success">
-                        <i class="mdi mdi-cash-multiple"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
+<!-- Revenus + Volume -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:24px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:8px;">Notre revenu net</div>
+        <div id="stat-revenue" style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;color:var(--green);">{{ our_revenue|floatformat:0 }} F</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:4px;">Commission sur transferts réussis</div>
+      </div>
     </div>
-
-    <!-- STATISTIQUES COMPLÉMENTAIRES -->
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ transfers_today }}</h4>
-                        <p class="text-muted mb-0">Transferts Aujourd'hui</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-calendar-today"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ pending_transfers }}</h4>
-                        <p class="text-muted mb-0">En cours</p>
-                    </div>
-                    <div class="widget-icon text-warning">
-                        <i class="mdi mdi-clock-outline"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ failed_transfers }}</h4>
-                        <p class="text-muted mb-0">Échoués</p>
-                    </div>
-                    <div class="widget-icon text-danger">
-                        <i class="mdi mdi-alert-circle"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ total_volume|floatformat:0 }} FCFA</h4>
-                        <p class="text-muted mb-0">Volume Transféré</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-bank-transfer"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:24px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:8px;">Volume total transféré</div>
+        <div id="stat-volume" style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;color:var(--teal);">{{ total_volume|floatformat:0 }} F</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:4px;">Montant total envoyé (réussis)</div>
+      </div>
     </div>
-
-    <!-- STATS SUPPLÉMENTAIRES PERTINENTES -->
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ paydunia_fees|floatformat:0 }} FCFA</h4>
-                        <p class="text-muted mb-0">Frais Paydunia</p>
-                    </div>
-                    <div class="widget-icon text-info">
-                        <i class="mdi mdi-wallet"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ average_transfer|floatformat:0 }} FCFA</h4>
-                        <p class="text-muted mb-0">Moyenne par Transfert</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-calculator"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">{{ success_rate|floatformat:0 }}%</h4>
-                        <p class="text-muted mb-0">Taux de Succès</p>
-                    </div>
-                    <div class="widget-icon text-success">
-                        <i class="mdi mdi-trending-up"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border">
-                <div class="card-body widget-desk">
-                    <div class="pull-right">
-                        <h4 class="mt-0 mb-0 fw-bold">4</h4>
-                        <p class="text-muted mb-0">Opérateurs Supportés</p>
-                    </div>
-                    <div class="widget-icon">
-                        <i class="mdi mdi-access-point-network"></i>
-                    </div>
-                    <div class="clearfix"></div>
-                </div>
-            </div>
-        </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:24px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:8px;">Frais Paydunya payés</div>
+        <div id="stat-pdyfees" style="font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;color:var(--gold);">{{ paydunia_fees|floatformat:0 }} F</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:4px;">Payin + Payout (réussis)</div>
+      </div>
     </div>
-
-    <!-- TOP OPÉRATEURS -->
-    <div class="row">
-        <div class="col-xl-6">
-            <div class="card border">
-                <div class="card-body">
-                    <h5 class="header-title border-bottom mb-3">Top Opérateurs Payin</h5>
-                    <ul class="list-group">
-                        {% for op in top_from %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ op.from_wallet|upper }}
-                            <span class="badge bg-primary">{{ op.volume|floatformat:0 }} FCFA ({{ op.count }} transferts)</span>
-                        </li>
-                        {% empty %}
-                        <li class="list-group-item text-center text-muted">Aucun données</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6">
-            <div class="card border">
-                <div class="card-body">
-                    <h5 class="header-title border-bottom mb-3">Top Opérateurs Payout</h5>
-                    <ul class="list-group">
-                        {% for op in top_to %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ op.to_wallet|upper }}
-                            <span class="badge bg-primary">{{ op.volume|floatformat:0 }} FCFA ({{ op.count }} transferts)</span>
-                        </li>
-                        {% empty %}
-                        <li class="list-group-item text-center text-muted">Aucun données</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ACTIONS RAPIDES -->
-    <div class="row">
-        <div class="col-xl-12">
-            <div class="card border">
-                <div class="card-body">
-                    <h5 class="header-title border-bottom mb-24 mt-0">Actions Rapides</h5>
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'custom_admin:users' %}" class="btn btn-primary btn-block">
-                                <i class="mdi mdi-account-multiple"></i> Gérer Utilisateurs
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'custom_admin:transfers' %}" class="btn btn-success btn-block">
-                                <i class="mdi mdi-swap-horizontal"></i> Voir Transferts
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'custom_admin:fees' %}" class="btn btn-info btn-block">
-                                <i class="mdi mdi-percent"></i> Gérer Frais
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'admin:index' %}" class="btn btn-warning btn-block">
-                                <i class="mdi mdi-cog"></i> Admin Django
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-function showToast(message, type = 'info') {
-    Toastify({
-        text: message,
-        duration: 3000,
-        gravity: 'top',
-        position: 'right',
-        backgroundColor: type === 'success' ? '#0d9488' : type === 'error' ? '#dc3545' : '#0d6efd',
-        stopOnFocus: true,
-    }).showToast();
+<!-- Indicateurs secondaires -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--blue-10);">
+          <i class="mdi mdi-account-multiple-outline" style="color:var(--blue);"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:var(--blue);" id="stat-users">{{ total_users }}</div>
+          <div class="stat-label">Utilisateurs inscrits</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--purple-10);">
+          <i class="mdi mdi-calendar-today" style="color:var(--purple);"></i>
+        </div>
+        <div>
+          <div class="stat-value" style="color:var(--purple);" id="stat-today">{{ transfers_today }}</div>
+          <div class="stat-label">Transferts aujourd'hui</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--teal-10);">
+          <i class="mdi mdi-trending-up" style="color:var(--teal);"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="stat-avg">{{ average_transfer|floatformat:0 }} F</div>
+          <div class="stat-label">Transfert moyen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top opérateurs -->
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="mdi mdi-arrow-up-circle-outline text-teal"></i>
+        Top opérateurs source (payin)
+      </div>
+      <div class="card-body p-0">
+        {% for item in top_from %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom:1px solid rgba(51,65,85,.5);">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-info">{{ item.from_wallet|upper }}</span>
+            <span style="color:var(--text-2);font-size:13px;">{{ item.count }} transfert{{ item.count|pluralize }}</span>
+          </div>
+          <span style="font-weight:700;color:var(--text-1);font-size:13px;">{{ item.volume|floatformat:0 }} F</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:var(--text-3);">Aucune donnée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <i class="mdi mdi-arrow-down-circle-outline text-teal"></i>
+        Top opérateurs destination (payout)
+      </div>
+      <div class="card-body p-0">
+        {% for item in top_to %}
+        <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom:1px solid rgba(51,65,85,.5);">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-success">{{ item.to_wallet|upper }}</span>
+            <span style="color:var(--text-2);font-size:13px;">{{ item.count }} transfert{{ item.count|pluralize }}</span>
+          </div>
+          <span style="font-weight:700;color:var(--text-1);font-size:13px;">{{ item.volume|floatformat:0 }} F</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:var(--text-3);">Aucune donnée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not from_date and not to_date %}
+<style>
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50%      { opacity:.3; }
 }
+</style>
+<script>
+var liveOn = true, sec = 0, liveTimer, counterTimer;
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('fr-FR');
+}
+
+function fetchStats() {
+  fetch("{% url 'custom_admin:dashboard_stats' %}")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('stat-total').textContent   = d.total_transfers;
+      document.getElementById('stat-success').textContent = d.successful_transfers;
+      document.getElementById('stat-pending').textContent = d.pending_transfers;
+      document.getElementById('stat-failed').textContent  = d.failed_transfers;
+      document.getElementById('stat-rate').textContent    = d.success_rate.toFixed(1);
+      document.getElementById('stat-revenue').textContent = fmt(d.our_revenue)       + ' F';
+      document.getElementById('stat-volume').textContent  = fmt(d.total_volume)      + ' F';
+      document.getElementById('stat-pdyfees').textContent = fmt(d.paydunia_fees)     + ' F';
+      document.getElementById('stat-users').textContent   = d.total_users;
+      document.getElementById('stat-today').textContent   = d.transfers_today;
+      document.getElementById('stat-avg').textContent     = fmt(d.average_transfer)  + ' F';
+      sec = 0;
+    })
+    .catch(function() { /* silencieux */ });
+}
+
+function toggleLive() {
+  liveOn = !liveOn;
+  var btn  = document.getElementById('btn-pause');
+  var dot  = document.getElementById('live-dot');
+  btn.textContent = liveOn ? '⏸ Pause' : '▶ Reprendre';
+  dot.style.background = liveOn ? 'var(--green)' : 'var(--text-3)';
+  dot.style.animation  = liveOn ? 'pulse 2s infinite' : 'none';
+  if (liveOn) {
+    fetchStats();
+    liveTimer = setInterval(fetchStats, 30000);
+  } else {
+    clearInterval(liveTimer);
+  }
+}
+
+// Démarrage du polling toutes les 30s
+liveTimer = setInterval(fetchStats, 30000);
+
+// Compteur "mis à jour il y a Xs"
+counterTimer = setInterval(function() {
+  sec++;
+  var el = document.getElementById('last-update');
+  if (el) {
+    el.textContent = sec < 60
+      ? 'il y a ' + sec + 's'
+      : 'il y a ' + Math.floor(sec / 60) + 'min';
+  }
+}, 1000);
 </script>
+{% endif %}
+
 {% endblock %}

@@ -27,7 +27,7 @@ BASE_URL = os.getenv('RENDER_EXTERNAL_URL') or os.getenv('BASE_URL', 'http://127
 PAYDUNYA_WEBHOOK_URL = f"{BASE_URL.rstrip('/')}/api/transfer/webhook-paydunya/"
 
 # Optionnel : pour les logs
-print(f"WEBHOOK URL → {PAYDUNYA_WEBHOOK_URL}")
+print(f"WEBHOOK URL -> {PAYDUNYA_WEBHOOK_URL}")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -99,6 +99,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'dashboard_admin.context_processors.recredits_count',
             ],
         },
     },
@@ -109,6 +110,28 @@ WSGI_APPLICATION = 'money_transfer.wsgi.application'
 
 # CORS (pour ton app Flutter)
 CORS_ALLOW_ALL_ORIGINS = True  # Prod: liste blanche
+
+# ── Cache (LocMemCache en dev, Redis en prod via CACHE_URL) ──────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'buudi-cache',
+    }
+}
+
+# ── Django REST Framework ─────────────────────────────────────────────────────
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon':     '200/hour',
+        'initiate': '10/minute',   # initier un transfert
+        'confirm':  '5/minute',    # confirmer/OTP
+        'credit':   '5/minute',    # credit receiver
+        'support':  '20/hour',     # créer un ticket support
+    },
+}
 
 # PayDunya
 

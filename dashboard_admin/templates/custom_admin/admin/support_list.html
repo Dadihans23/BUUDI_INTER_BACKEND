@@ -1,0 +1,116 @@
+{% extends 'custom_admin/base_common.html' %}
+{% block title %}Support client — Buudi Admin{% endblock %}
+{% block breadcrumb %}Support client{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Support client</h1>
+    <p class="page-subtitle">Tickets et conversations avec les utilisateurs</p>
+  </div>
+  {% if open_count > 0 %}
+  <span style="background:var(--red-10);color:var(--red);border:1px solid rgba(239,68,68,.2);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+    <i class="mdi mdi-alert-circle-outline me-1"></i>{{ open_count }} ticket{{ open_count|pluralize }} ouverts
+  </span>
+  {% endif %}
+</div>
+
+<!-- Filtres statut -->
+<div class="card mb-3">
+  <div class="card-body" style="padding:12px 18px;">
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <span style="font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Filtrer :</span>
+      <a href="{% url 'custom_admin:support_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">Tous</a>
+      <a href="?status=open" class="btn btn-sm {% if status_filter == 'open' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:5px;"></span>Ouverts
+      </a>
+      <a href="?status=in_progress" class="btn btn-sm {% if status_filter == 'in_progress' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-right:5px;"></span>En cours
+      </a>
+      <a href="?status=resolved" class="btn btn-sm {% if status_filter == 'resolved' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;"></span>Résolus
+      </a>
+      <span class="ms-auto" style="font-size:12px;color:var(--text-3);">{{ page_obj.paginator.count }} ticket{{ page_obj.paginator.count|pluralize }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Utilisateur</th>
+            <th>Catégorie</th>
+            <th>Sujet</th>
+            <th>Statut</th>
+            <th>Mis à jour</th>
+            <th style="text-align:center;width:80px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ticket in page_obj %}
+          <tr style="cursor:pointer;" onclick="window.location='{% url 'custom_admin:support_detail' ticket.id %}'">
+            <td class="ps-4" style="font-size:12px;color:var(--text-3);">#{{ ticket.id }}</td>
+            <td>
+              <div style="font-weight:600;color:var(--text-1);">{{ ticket.user.name }}</div>
+              <div style="font-size:11px;font-family:monospace;color:var(--text-3);">{{ ticket.user.phone }}</div>
+            </td>
+            <td>
+              {% if ticket.category == 'reclamation' %}<span class="badge bg-danger">Réclamation</span>
+              {% elif ticket.category == 'question' %}<span class="badge bg-info">Question</span>
+              {% elif ticket.category == 'bug' %}<span class="badge bg-warning">Bug</span>
+              {% else %}<span class="badge bg-secondary">Autre</span>{% endif %}
+            </td>
+            <td style="color:var(--text-1);font-size:13px;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ ticket.subject }}
+            </td>
+            <td>
+              {% if ticket.status == 'open' %}<span class="badge bg-danger">Ouvert</span>
+              {% elif ticket.status == 'in_progress' %}<span class="badge bg-warning">En cours</span>
+              {% else %}<span class="badge bg-success">Résolu</span>{% endif %}
+            </td>
+            <td style="font-size:12px;color:var(--text-3);">{{ ticket.updated_at|date:"d/m/Y H:i" }}</td>
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+              <a href="{% url 'custom_admin:support_detail' ticket.id %}" class="btn btn-outline-primary btn-sm">
+                <i class="mdi mdi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <small style="color:var(--text-3);">{{ page_obj.start_index }}–{{ page_obj.end_index }} sur {{ page_obj.paginator.count }}</small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">‹</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">›</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+      <i class="mdi mdi-headset" style="font-size:3rem;color:var(--text-3);"></i>
+      <p class="mt-3 mb-0" style="color:var(--text-2);font-weight:600;">
+        {% if status_filter %}Aucun ticket {{ status_filter }}{% else %}Aucun ticket{% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

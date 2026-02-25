@@ -1,0 +1,109 @@
+{% extends 'custom_admin/base_common.html' %}
+{% block title %}Journal d'audit — Buudi Admin{% endblock %}
+{% block breadcrumb %}Journal d'audit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Journal d'audit</h1>
+    <p class="page-subtitle">Toutes les actions effectuées par les administrateurs</p>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="d-flex gap-2 align-items-end flex-wrap">
+      <div>
+        <label class="form-label" style="font-size:12px;">Action</label>
+        <select name="action" class="form-select form-select-sm" style="min-width:200px;">
+          <option value="">— Toutes les actions —</option>
+          {% for code, label in actions %}
+          <option value="{{ code }}" {% if action_filter == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label" style="font-size:12px;">Date</label>
+        <input type="date" name="date" class="form-control form-control-sm" value="{{ date_filter }}">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Filtrer</button>
+      {% if action_filter or date_filter %}
+      <a href="{% url 'custom_admin:audit_log' %}" class="btn btn-outline-secondary btn-sm">Réinitialiser</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+  <div class="card-header">
+    <i class="mdi mdi-clipboard-text-clock-outline"></i>
+    Entrées récentes
+    <span style="font-size:11px;color:var(--text-3);margin-left:8px;">(max 200)</span>
+  </div>
+  <div class="card-body p-0">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="table table-hover" style="font-size:13px;">
+        <thead>
+          <tr>
+            <th class="ps-4" style="width:140px;">Heure</th>
+            <th style="width:110px;">Admin</th>
+            <th style="width:170px;">Action</th>
+            <th style="width:120px;">Objet</th>
+            <th>Résumé</th>
+            <th style="width:120px;">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="ps-4" style="color:var(--text-3);font-size:11px;white-space:nowrap;">
+              {{ log.created_at|date:"d/m/Y H:i:s" }}
+            </td>
+            <td style="font-weight:600;color:var(--text-1);">
+              {% if log.admin %}{{ log.admin.username }}{% else %}<span style="color:var(--text-3);">system</span>{% endif %}
+            </td>
+            <td>
+              {% if log.action == 'user_create' or log.action == 'user_edit' %}
+                <span class="badge" style="background:var(--green-10);color:var(--green);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'transfer_delete' %}
+                <span class="badge" style="background:var(--red-10);color:var(--red);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'transfer_edit' or log.action == 'transfer_retry' %}
+                <span class="badge" style="background:var(--blue-10);color:var(--blue);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'credit_retry' or log.action == 'credit_retry_all' %}
+                <span class="badge" style="background:var(--gold-10);color:var(--gold);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'reconcile' %}
+                <span class="badge" style="background:rgba(20,184,166,.12);color:#14b8a6;">{{ log.get_action_display }}</span>
+              {% elif log.action == 'fee_edit' %}
+                <span class="badge" style="background:var(--gold-10);color:var(--gold);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'manual_disburse' or log.action == 'disburse_check' %}
+                <span class="badge" style="background:var(--blue-10);color:var(--blue);">{{ log.get_action_display }}</span>
+              {% elif log.action == 'support_reply' or log.action == 'support_resolve' %}
+                <span class="badge" style="background:rgba(139,92,246,.12);color:#8b5cf6;">{{ log.get_action_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+              {% endif %}
+            </td>
+            <td style="font-size:11px;font-family:monospace;color:var(--text-3);">
+              {% if log.object_type %}{{ log.object_type }}{% if log.object_id %} #{{ log.object_id }}{% endif %}{% else %}—{% endif %}
+            </td>
+            <td style="color:var(--text-2);">{{ log.summary }}</td>
+            <td style="font-size:11px;font-family:monospace;color:var(--text-3);">
+              {{ log.ip_address|default:"—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="mdi mdi-clipboard-text-off-outline" style="font-size:3rem;color:var(--text-3);"></i>
+      <p style="margin-top:12px;color:var(--text-3);">Aucune entrée{% if action_filter or date_filter %} pour ce filtre{% endif %}.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

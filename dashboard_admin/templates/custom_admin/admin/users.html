@@ -1,152 +1,153 @@
 {% extends 'custom_admin/base_common.html' %}
-{% load static %}
-
-{% block title %}Utilisateurs - Transfert Admin{% endblock %}
-
-{% block sidebar_menu %}
-<!-- Dashboard -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:dashboard' %}"><i class="menu-icon mdi mdi-view-dashboard"></i><span>Dashboard</span></a>
-</li>
-
-<!-- Utilisateurs → ACTIF -->
-<li class="accordion-menu-item has-submenu opened">
-    <a href="#" class="accordion-toggle opened">
-        <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
-        <i class="mdi mdi-chevron-down accordion-arrow"></i>
-    </a>
-    <ul class="sub-menu" style="display: block;">
-        <li><a href="{% url 'custom_admin:users' %}" class="active">Liste des utilisateurs</a></li>
-        <li><a href="{% url 'custom_admin:user_create' %}">Ajouter un utilisateur</a></li>
-    </ul>
-</li>
-
-<!-- Transferts -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:transfers' %}"><i class="menu-icon mdi mdi-swap-horizontal-bold"></i><span>Transferts</span></a>
-</li>
-
-<!-- Frais Opérateurs -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:fees' %}"><i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span></a>
-</li>
-
-<!-- Paramètres -->
-<li class="accordion-menu-item">
-    <a href="{% url 'custom_admin:settings' %}"><i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span></a>
-</li>
-
-<!-- Admin Django -->
-<li class="accordion-menu-item">
-    <a href="{% url 'admin:index' %}"><i class="menu-icon mdi mdi-shield-account"></i><span>Admin Django</span></a>
-</li>
-{% endblock %}
+{% block title %}Utilisateurs — Buudi Admin{% endblock %}
+{% block breadcrumb %}Utilisateurs{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title mb-15">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="breadcrumb-header fw-bold mb-2" style="color: #1e293b;">👥 Liste des Utilisateurs</h2>
-                        <p class="text-muted mb-0">Gestion des profils utilisateurs</p>
-                    </div>
-                    <a href="{% url 'custom_admin:user_create' %}" class="btn btn-primary">
-                        <i class="mdi mdi-account-plus"></i> Ajouter un utilisateur
-                    </a>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Utilisateurs</h1>
+    <p class="page-subtitle">Gestion des comptes utilisateurs</p>
+  </div>
+  <a href="{% url 'custom_admin:user_create' %}" class="btn btn-primary btn-sm">
+    <i class="mdi mdi-account-plus me-1"></i>Nouvel utilisateur
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--teal-10);"><i class="mdi mdi-account-group-outline" style="color:var(--teal);"></i></div>
+        <div><div class="stat-value">{{ total_users }}</div><div class="stat-label">Total</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--green-10);"><i class="mdi mdi-account-plus-outline" style="color:var(--green);"></i></div>
+        <div><div class="stat-value" style="color:var(--green);">{{ new_this_month }}</div><div class="stat-label">Nouveaux ce mois</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:var(--blue-10);"><i class="mdi mdi-swap-horizontal" style="color:var(--blue);"></i></div>
+        <div><div class="stat-value" style="color:var(--blue);">{{ active_users }}</div><div class="stat-label">Ont transféré</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recherche -->
+<div class="card mb-3">
+  <div class="card-body" style="padding:14px 18px;">
+    <form method="GET" class="d-flex gap-2 align-items-center flex-wrap">
+      <div class="input-group input-group-sm" style="max-width:320px;">
+        <span class="input-group-text"><i class="mdi mdi-magnify"></i></span>
+        <input type="text" name="search" value="{{ search_query|default:'' }}" class="form-control" placeholder="Nom ou téléphone…">
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+      {% if search_query %}
+      <a href="{% url 'custom_admin:users' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="mdi mdi-close me-1"></i>Effacer
+      </a>
+      <span style="font-size:12px;color:var(--text-3);">{{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}</span>
+      {% else %}
+      <span class="ms-auto" style="font-size:12px;color:var(--text-3);">{{ page_obj.paginator.count }} utilisateur{{ page_obj.paginator.count|pluralize }}</span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th class="ps-4" style="width:60px;">#</th>
+            <th>Utilisateur</th>
+            <th>Téléphone</th>
+            <th>Inscrit le</th>
+            <th style="text-align:center;">Transferts</th>
+            <th style="text-align:center;width:100px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in page_obj %}
+          <tr style="cursor:pointer;" onclick="window.location='{% url 'custom_admin:user_detail' u.id %}'">
+            <td class="ps-4" style="font-size:12px;color:var(--text-3);font-weight:600;">#{{ u.id }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--teal-10);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--teal);flex-shrink:0;">
+                  {{ u.name|slice:":1"|upper }}
                 </div>
-            </div>
-        </div>
+                <span style="font-weight:600;color:var(--text-1);">{{ u.name }}</span>
+              </div>
+            </td>
+            <td style="font-family:monospace;font-size:13px;">{{ u.phone }}</td>
+            <td style="font-size:13px;">
+              <div>{{ u.created_at|date:"d/m/Y" }}</div>
+              <div style="font-size:11px;color:var(--text-3);">{{ u.created_at|date:"H:i" }}</div>
+            </td>
+            <td style="text-align:center;">
+              {% with tc=u.transfer_set.count %}
+              {% if tc > 0 %}
+              <span style="display:inline-block;padding:2px 10px;background:var(--teal-10);border-radius:20px;font-weight:700;font-size:13px;color:var(--teal);">{{ tc }}</span>
+              {% else %}
+              <span style="color:var(--text-3);">—</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+              <div class="d-flex gap-1 justify-content-center">
+                <a href="{% url 'custom_admin:user_detail' u.id %}" class="btn btn-outline-primary btn-sm" title="Voir">
+                  <i class="mdi mdi-eye"></i>
+                </a>
+                <a href="{% url 'custom_admin:user_edit' u.id %}" class="btn btn-outline-secondary btn-sm" title="Modifier">
+                  <i class="mdi mdi-pencil"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
-    <div class="card border">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Téléphone</th>
-                            <th>Inscrit le</th>
-                            <th>Transferts</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in page_obj %}
-                        <tr>
-                            <td><strong>#{{ user.id }}</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-sm me-3 bg-soft-primary text-primary rounded-circle d-flex align-items-center justify-content-center">
-                                        {{ user.name|slice:":1"|upper }}
-                                    </div>
-                                    <div>
-                                        <strong>{{ user.name }}</strong>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{{ user.phone }}</td>
-                            <td>{{ user.created_at|date:"d/m/Y" }}</td>
-                            <td>{{ user.transfer_set.count }}</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{% url 'custom_admin:user_detail' user.id %}" class="btn btn-outline-primary btn-sm" title="Détail">
-                                        <i class="mdi mdi-eye"></i>
-                                    </a>
-                                    <a href="{% url 'custom_admin:user_edit' user.id %}" class="btn btn-outline-warning btn-sm" title="Modifier">
-                                        <i class="mdi mdi-pencil"></i>
-                                    </a>
-                                    {% comment %} <a href="{% url 'custom_admin:user_delete' user.id %}" class="btn btn-outline-danger btn-sm" title="Supprimer" onclick="return confirm('Supprimer cet utilisateur ?')">
-                                        <i class="mdi mdi-delete"></i>
-                                    </a> {% endcomment %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <i class="mdi mdi-account-off text-muted" style="font-size: 4rem;"></i>
-                                <h5 class="text-muted mt-3">Aucun utilisateur</h5>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-            <div class="card-footer bg-light">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <small class="text-muted">
-                            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ page_obj.paginator.count }} utilisateurs
-                        </small>
-                    </div>
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
-                            {% endif %}
-                            {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                                {% endif %}
-                            {% endfor %}
-                            {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                </div>
-            </div>
-            {% endif %}
-        </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <small style="color:var(--text-3);">{{ page_obj.start_index }}–{{ page_obj.end_index }} sur {{ page_obj.paginator.count }}</small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">‹</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">›</a></li>
+          {% endif %}
+        </ul>
+      </nav>
     </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+      <i class="mdi mdi-account-search-outline" style="font-size:3rem;color:var(--text-3);"></i>
+      <p class="mt-3 mb-1" style="color:var(--text-2);font-weight:600;">
+        {% if search_query %}Aucun résultat pour « {{ search_query }} »{% else %}Aucun utilisateur{% endif %}
+      </p>
+      {% if search_query %}
+      <a href="{% url 'custom_admin:users' %}" class="btn btn-outline-secondary btn-sm mt-2">Effacer la recherche</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

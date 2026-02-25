@@ -1,0 +1,177 @@
+{% extends 'custom_admin/base_common.html' %}
+{% block title %}Re-crédit — Buudi Admin{% endblock %}
+{% block breadcrumb %}Re-crédit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Re-crédit</h1>
+    <p class="page-subtitle">Transferts débités mais non crédités au destinataire</p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <button id="btn-reconcile" class="btn btn-outline-info btn-sm" onclick="lancerReconciliation()">
+      <i class="mdi mdi-sync me-1"></i>Réconcilier disbursing
+    </button>
+    {% if total_pending > 0 %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="retry_all">
+      <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Relancer {{ total_pending }} crédit(s) en attente ?')">
+        <i class="mdi mdi-refresh me-1"></i>Tout relancer ({{ total_pending }})
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function lancerReconciliation() {
+  var btn = document.getElementById('btn-reconcile');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>En cours...';
+
+  fetch("{% url 'custom_admin:reconcile' %}", {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'}
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    alert('✅ Réconciliation terminée\n' + data.message);
+    location.reload();
+  })
+  .catch(function(err) {
+    alert('❌ Erreur réseau : ' + err);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="mdi mdi-sync me-1"></i>Réconcilier disbursing';
+  });
+}
+</script>
+
+{% if total_pending == 0 %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="mdi mdi-check-circle-outline" style="font-size:3.5rem;color:var(--green);"></i>
+    <p class="mt-3 mb-0" style="color:var(--text-1);font-weight:600;font-size:16px;">Tout est bon !</p>
+    <p style="color:var(--text-3);font-size:13px;margin-top:4px;">Aucun transfert ne nécessite de re-crédit.</p>
+  </div>
+</div>
+{% else %}
+
+<!-- Crédit échoué -->
+{% if credit_failed %}
+<div class="card mb-3">
+  <div class="card-header" style="color:var(--red);">
+    <i class="mdi mdi-alert-circle-outline"></i>
+    Crédit définitivement échoué ({{ credit_failed.count }})
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Utilisateur</th>
+            <th>Trajet</th>
+            <th>Montant</th>
+            <th>Mis à jour</th>
+            <th style="text-align:center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in credit_failed %}
+          <tr>
+            <td class="ps-4" style="font-size:12px;color:var(--text-3);">{{ t.id }}</td>
+            <td>
+              <div style="font-weight:600;color:var(--text-1);">{{ t.user.name }}</div>
+              <div style="font-size:11px;font-family:monospace;color:var(--text-3);">{{ t.user.phone }}</div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-1">
+                <span class="badge bg-info" style="font-size:10px;">{{ t.from_wallet|upper }}</span>
+                <i class="mdi mdi-arrow-right" style="font-size:11px;color:var(--text-3);"></i>
+                <span class="badge bg-success" style="font-size:10px;">{{ t.to_wallet|upper }}</span>
+              </div>
+              <div style="font-size:11px;font-family:monospace;color:var(--text-3);margin-top:2px;">→ {{ t.to_phone }}</div>
+            </td>
+            <td style="font-weight:700;color:var(--text-1);">{{ t.amount_requested|floatformat:0 }} F</td>
+            <td style="font-size:12px;color:var(--text-3);">{{ t.updated_at|date:"d/m/Y H:i" }}</td>
+            <td style="text-align:center;">
+              <div class="d-flex gap-1 justify-content-center">
+                <a href="{% url 'custom_admin:transfer_detail' t.id %}" class="btn btn-outline-primary btn-sm">
+                  <i class="mdi mdi-eye"></i>
+                </a>
+                <a href="{% url 'custom_admin:credit_retry' t.id %}" class="btn btn-warning btn-sm"
+                   onclick="return confirm('Relancer le crédit pour #{{ t.id }} ?')">
+                  <i class="mdi mdi-refresh"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Débités bloqués -->
+{% if stuck_debited %}
+<div class="card">
+  <div class="card-header" style="color:var(--gold);">
+    <i class="mdi mdi-clock-alert-outline"></i>
+    Débités bloqués depuis +10 min ({{ stuck_debited.count }})
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th class="ps-4">#</th>
+            <th>Utilisateur</th>
+            <th>Trajet</th>
+            <th>Montant</th>
+            <th>Bloqué depuis</th>
+            <th style="text-align:center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in stuck_debited %}
+          <tr>
+            <td class="ps-4" style="font-size:12px;color:var(--text-3);">{{ t.id }}</td>
+            <td>
+              <div style="font-weight:600;color:var(--text-1);">{{ t.user.name }}</div>
+              <div style="font-size:11px;font-family:monospace;color:var(--text-3);">{{ t.user.phone }}</div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-1">
+                <span class="badge bg-info" style="font-size:10px;">{{ t.from_wallet|upper }}</span>
+                <i class="mdi mdi-arrow-right" style="font-size:11px;color:var(--text-3);"></i>
+                <span class="badge bg-success" style="font-size:10px;">{{ t.to_wallet|upper }}</span>
+              </div>
+              <div style="font-size:11px;font-family:monospace;color:var(--text-3);margin-top:2px;">→ {{ t.to_phone }}</div>
+            </td>
+            <td style="font-weight:700;color:var(--text-1);">{{ t.amount_requested|floatformat:0 }} F</td>
+            <td style="font-size:12px;color:var(--gold);">{{ t.updated_at|date:"d/m/Y H:i" }}</td>
+            <td style="text-align:center;">
+              <div class="d-flex gap-1 justify-content-center">
+                <a href="{% url 'custom_admin:transfer_detail' t.id %}" class="btn btn-outline-primary btn-sm">
+                  <i class="mdi mdi-eye"></i>
+                </a>
+                <a href="{% url 'custom_admin:credit_retry' t.id %}" class="btn btn-outline-warning btn-sm"
+                   onclick="return confirm('Relancer le crédit pour #{{ t.id }} ?')">
+                  <i class="mdi mdi-refresh"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

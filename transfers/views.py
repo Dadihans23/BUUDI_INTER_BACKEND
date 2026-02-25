@@ -51,7 +51,12 @@ WALLET_MAP = {
 }
 
 
+from transfers.throttles import InitiateThrottle, ConfirmThrottle, CreditThrottle
+
+
 class InitiateTransferView(APIView):
+    throttle_classes = [InitiateThrottle]
+
     def post(self, request):
     
         phone = request.headers.get('X-User-Phone')
@@ -146,6 +151,8 @@ class InitiateTransferView(APIView):
 
 
 class ConfirmDebitView(APIView):
+    throttle_classes = [ConfirmThrottle]
+
     def post(self, request):
         transfer_id = request.data.get('transfer_id')
         otp = request.data.get('otp', '')
@@ -226,7 +233,8 @@ def _launch_credit(transfer):
         return
 
     client = PayDunyaClient()
-    disburse_id = f"MB{transfer.id}"
+    # Suffix timestamp : idempotent au sein de cette tentative, unique entre retries
+    disburse_id = f"MB{transfer.id}T{int(time.time())}"
 
     # 1. Création du déboursement — retry 3x sur timeout (disburse_id = clé idempotente)
     disburse = None
@@ -461,6 +469,8 @@ class FeesConfigView(APIView):
         
 class CreditReceiverView(APIView):
     """Retry manuel du crédit pour les transferts bloqués (debited / credit_failed)."""
+    throttle_classes = [CreditThrottle]
+
     def post(self, request):
         transfer_id = request.data.get('transfer_id')
         try:
@@ -484,8 +494,111 @@ class CreditReceiverView(APIView):
             "transfer_id": transfer.id,
             "disburse_id": f"MB{transfer.id}"
         })
-    
-    
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WEBHOOK PAYDUNYA — callback automatique quand un déboursement est confirmé
+# ─────────────────────────────────────────────────────────────────────────────
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def paydunya_webhook(request):
+    """
+    Reçoit les notifications push de Paydunya pour les déboursements (payout).
+
+    Payload disburse callback :
+    {
+        "status": "success" | "failed" | "pending",
+        "token": "<disburse_token>",
+        "disburse_id": "MB170T..." | "ADMIN5",
+        "transaction_id": "TFA-TX-...",
+        "withdraw_mode": "mtn-ci",
+        "amount": "5000.00"
+    }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        payload = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    logger.info(f"WEBHOOK PAYDUNYA reçu → {payload}")
+
+    status         = payload.get('status', '')
+    disburse_id    = payload.get('disburse_id', '')
+    token          = payload.get('token', '')
+    transaction_id = payload.get('transaction_id', '')
+
+    if not status:
+        return JsonResponse({'received': True, 'note': 'no status'})
+
+    # ── 1. ManualDisbursement (disburse_id = "ADMIN<id>") ────────────────────
+    if disburse_id.startswith('ADMIN'):
+        try:
+            from dashboard_admin.models import ManualDisbursement
+            md_id    = int(disburse_id.replace('ADMIN', '').split('T')[0])
+            disburse = ManualDisbursement.objects.get(id=md_id)
+            if status == 'success':
+                disburse.status = 'success'
+                if disburse.transfer and disburse.transfer.status != 'success':
+                    disburse.transfer.status = 'success'
+                    disburse.transfer.save(update_fields=['status'])
+            elif status == 'failed':
+                disburse.status = 'failed'
+            disburse.paydunya_status = status
+            disburse.transaction_id  = transaction_id or disburse.transaction_id
+            disburse.paydunya_desc   = str(payload)
+            disburse.save()
+            logger.info(f"WEBHOOK → ManualDisbursement ADMIN#{md_id} → {status}")
+        except Exception as e:
+            logger.error(f"WEBHOOK → Erreur ManualDisbursement {disburse_id} : {e}")
+
+    # ── 2. Transfer régulier (disburse_id = "MB<id>T<timestamp>") ────────────
+    elif disburse_id.startswith('MB'):
+        try:
+            transfer_id = int(disburse_id.split('T')[0].replace('MB', ''))
+            transfer    = Transfer.objects.get(id=transfer_id)
+            if status == 'success' and transfer.status in ('disbursing', 'debited', 'credit_failed'):
+                transfer.status = 'success'
+                transfer.save(update_fields=['status'])
+                logger.info(f"WEBHOOK → Transfer #{transfer_id} → SUCCESS")
+            elif status == 'failed' and transfer.status in ('disbursing', 'debited', 'credit_failed'):
+                transfer.status = 'credit_failed'
+                transfer.save(update_fields=['status'])
+                logger.error(f"WEBHOOK → Transfer #{transfer_id} → CREDIT_FAILED")
+        except Exception as e:
+            logger.error(f"WEBHOOK → Erreur Transfer {disburse_id} : {e}")
+
+    # ── 3. Fallback : pas de disburse_id, recherche par token ────────────────
+    elif token:
+        try:
+            transfer = Transfer.objects.get(disburse_token=token)
+            if status == 'success' and transfer.status in ('disbursing', 'debited', 'credit_failed'):
+                transfer.status = 'success'
+                transfer.save(update_fields=['status'])
+            elif status == 'failed' and transfer.status in ('disbursing', 'debited'):
+                transfer.status = 'credit_failed'
+                transfer.save(update_fields=['status'])
+        except Transfer.DoesNotExist:
+            try:
+                from dashboard_admin.models import ManualDisbursement
+                md = ManualDisbursement.objects.get(disburse_token=token)
+                md.status          = 'success' if status == 'success' else ('failed' if status == 'failed' else 'pending')
+                md.paydunya_status = status
+                md.transaction_id  = transaction_id or md.transaction_id
+                md.save()
+            except Exception:
+                logger.warning(f"WEBHOOK → token {token[:15]}... introuvable")
+        except Exception as e:
+            logger.error(f"WEBHOOK → Erreur fallback token : {e}")
+
+    return JsonResponse({'received': True})
+
+
 
 
 

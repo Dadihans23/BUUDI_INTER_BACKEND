@@ -1,544 +1,112 @@
-{% extends 'custom_admin/base_admin.html' %}
-{% load static %}
-
-{% block title %}Paramètres - {{ settings.site_name }}{% endblock %}
+{% extends 'custom_admin/base_common.html' %}
+{% block title %}Paramètres — Buudi Admin{% endblock %}
+{% block breadcrumb %}Paramètres{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title mb-15">
-                <div class="d-flex justify-content-md-between justify-content-center py-2">
-                    <div class="d-none d-md-block">
-                        <h3 class="breadcrumb-header">Paramètres</h3>
-                        <p class="text-muted mb-0">Configuration système et préférences</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-warning" onclick="resetToDefaults()">
-                            <i class="mdi mdi-restore"></i> Restaurer défauts
-                        </button>
-                        <button type="submit" form="settingsForm" class="btn btn-success">
-                            <i class="mdi mdi-content-save"></i> Sauvegarder
-                        </button>
-                    </div>
-                    <div class="pull-right">
-                        <div class="btn-group mx-auto">
-                            <ol class="breadcrumb hide-phone m-0">
-                                <li class="breadcrumb-item"><a href="{% url 'custom_admin:dashboard' %}">Admin</a></li>
-                                <li class="breadcrumb-item active">Paramètres</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Paramètres</h1>
+    <p class="page-subtitle">Configuration de la plateforme Buudi Inter</p>
+  </div>
+  <button type="submit" form="settingsForm" class="btn btn-primary btn-sm">
+    <i class="mdi mdi-content-save me-1"></i>Sauvegarder
+  </button>
 </div>
 
 <form id="settingsForm" method="POST">
-    {% csrf_token %}
-    
-<div class="container-fluid">
-    <div class="row">
-        <!-- Settings Navigation -->
-        <div class="col-xl-3">
-            <div class="card border">
-                <div class="card-body">
-                    <h5 class="header-title mb-3">Catégories</h5>
-                    <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
-                        <button class="nav-link active" id="general-tab" data-bs-toggle="pill" data-bs-target="#general" type="button">
-                            <i class="mdi mdi-cog me-2"></i> Général
-                        </button>
-                        <button class="nav-link" id="api-tab" data-bs-toggle="pill" data-bs-target="#api" type="button">
-                            <i class="mdi mdi-api me-2"></i> API
-                        </button>
-                        <button class="nav-link" id="email-tab" data-bs-toggle="pill" data-bs-target="#email" type="button">
-                            <i class="mdi mdi-email me-2"></i> Email
-                        </button>
-                        <button class="nav-link" id="security-tab" data-bs-toggle="pill" data-bs-target="#security" type="button">
-                            <i class="mdi mdi-shield me-2"></i> Sécurité
-                        </button>
-                        {% comment %} <button class="nav-link" id="appearance-tab" data-bs-toggle="pill" data-bs-target="#appearance" type="button">
-                            <i class="mdi mdi-palette me-2"></i> Apparence
-                        </button> {% endcomment %}
-                        {% comment %} <button class="nav-link" id="backup-tab" data-bs-toggle="pill" data-bs-target="#backup" type="button">
-                            <i class="mdi mdi-backup-restore me-2"></i> Sauvegarde
-                        </button> {% endcomment %}
-                    </div>
-                </div>
-            </div>
+  {% csrf_token %}
+  <div class="row g-3">
+
+    <!-- Général -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><i class="mdi mdi-cog-outline text-teal"></i>Général</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Nom de la plateforme</label>
+            <input type="text" class="form-control" name="site_name" placeholder="Buudi Inter">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email de support</label>
+            <input type="email" class="form-control" name="support_email" placeholder="support@buudi.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Montant minimum transfert (FCFA)</label>
+            <input type="number" class="form-control" name="min_transfer" placeholder="500">
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Montant maximum transfert (FCFA)</label>
+            <input type="number" class="form-control" name="max_transfer" placeholder="500000">
+          </div>
         </div>
-
-        <!-- Settings Content -->
-        <div class="col-xl-9">
-            <div class="tab-content" id="v-pills-tabContent">
-                
-                <!-- General Settings -->
-                <div class="tab-pane fade show active" id="general" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Paramètres généraux</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Nom du site</label>
-                                        <input type="text" class="form-control" name="site_name" value="{{ settings.site_name }}">
-                                    </div>
-                                </div>
-                                {% comment %} <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Fuseau horaire</label>
-                                        <select class="form-control" name="timezone">
-                                            <option value="UTC" {% if settings.timezone == "UTC" %}selected{% endif %}>UTC</option>
-                                            <option value="Europe/Paris" {% if settings.timezone == "Europe/Paris" %}selected{% endif %}>Europe/Paris</option>
-                                            <option value="America/New_York" {% if settings.timezone == "America/New_York" %}selected{% endif %}>America/New_York</option>
-                                        </select>
-                                    </div>
-                                </div> {% endcomment %}
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Langue par défaut</label>
-                                        <select class="form-control" name="default_language">
-                                            <option value="fr" {% if settings.default_language == "fr" %}selected{% endif %}>Français</option>
-                                            <option value="en" {% if settings.default_language == "en" %}selected{% endif %}>English</option>
-                                            <option value="es" {% if settings.default_language == "es" %}selected{% endif %}>Español</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                {% comment %} <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Format de date</label>
-                                        <select class="form-control" name="date_format">
-                                            <option value="dd/mm/yyyy" {% if settings.date_format == "dd/mm/yyyy" %}selected{% endif %}>DD/MM/YYYY</option>
-                                            <option value="mm/dd/yyyy" {% if settings.date_format == "mm/dd/yyyy" %}selected{% endif %}>MM/DD/YYYY</option>
-                                            <option value="yyyy-mm-dd" {% if settings.date_format == "yyyy-mm-dd" %}selected{% endif %}>YYYY-MM-DD</option>
-                                        </select>
-                                    </div>
-                                </div> {% endcomment %}
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="maintenance_mode" id="maintenanceMode" {% if settings.maintenance_mode %}checked{% endif %}>
-                                    <label class="form-check-label" for="maintenanceMode">
-                                        Mode maintenance
-                                    </label>
-                                </div>
-                                <small class="text-muted">Active le mode maintenance pour le site public</small>
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="allow_registrations" id="allowRegistrations" {% if settings.allow_registrations %}checked{% endif %}>
-                                    <label class="form-check-label" for="allowRegistrations">
-                                        Autoriser les nouvelles inscriptions
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- API Settings -->
-                <div class="tab-pane fade" id="api" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Configuration API</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Limite d'appels par heure</label>
-                                        <input type="number" class="form-control" name="max_api_calls_per_hour" value="{{ settings.max_api_calls_per_hour }}">
-                                    </div>
-                                </div>
-                                {% comment %} <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Limite de caractères par défaut</label>
-                                        <input type="number" class="form-control" name="default_character_limit" value="{{ settings.default_character_limit }}">
-                                    </div>
-                                </div> {% endcomment %}
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <label>Endpoints activés</label>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="tts_enabled" id="ttsEndpoint" {% if settings.tts_enabled %}checked{% endif %}>
-                                            <label class="form-check-label" for="ttsEndpoint">
-                                                Text-to-Speech
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="translate_enabled" id="translateEndpoint" {% if settings.translate_enabled %}checked{% endif %}>
-                                            <label class="form-check-label" for="translateEndpoint">
-                                                Translation
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="detect_enabled" id="detectEndpoint" {% if settings.detect_enabled %}checked{% endif %}>
-                                            <label class="form-check-label" for="detectEndpoint">
-                                                Language Detection
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="voice_clone_enabled" id="voiceCloneEndpoint" {% if settings.voice_clone_enabled %}checked{% endif %}>
-                                            <label class="form-check-label" for="voiceCloneEndpoint">
-                                                Voice Clone
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% comment %} <div class="alert alert-info">
-                                <i class="mdi mdi-information"></i>
-                                <strong>Clé API maître:</strong> <code>{{ settings.master_api_key }}</code>
-                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="regenerateApiKey()">
-                                    <i class="mdi mdi-refresh"></i> Régénérer
-                                </button>
-                            </div> {% endcomment %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Email Settings -->
-                <div class="tab-pane fade" id="email" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Configuration Email</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Serveur SMTP</label>
-                                        <input type="text" class="form-control" name="smtp_server" value="{{ settings.smtp_server }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Port SMTP</label>
-                                        <input type="number" class="form-control" name="smtp_port" value="{{ settings.smtp_port }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Email d'envoi</label>
-                                        <input type="email" class="form-control" name="smtp_email" value="{{ settings.smtp_email }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Nom d'envoi</label>
-                                        <input type="text" class="form-control" name="smtp_name" value="{{ settings.smtp_name }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% comment %} <div class="form-group mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotifications" {% if settings.email_notifications %}checked{% endif %}>
-                                    <label class="form-check-label" for="emailNotifications">
-                                        Notifications par email
-                                    </label>
-                                </div>
-                            </div> {% endcomment %}
-
-                            {% comment %} <button type="button" class="btn btn-outline-primary" onclick="testEmail()">
-                                <i class="mdi mdi-email-send"></i> Tester la configuration
-                            </button> {% endcomment %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Security Settings -->
-                <div class="tab-pane fade" id="security" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Paramètres de sécurité</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Durée de session (minutes)</label>
-                                        <input type="number" class="form-control" name="session_duration" value="{{ settings.session_duration }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label>Tentatives de connexion max</label>
-                                        <input type="number" class="form-control" name="max_login_attempts" value="{{ settings.max_login_attempts }}">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <label>Exigences du mot de passe</label>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="password_require_uppercase" id="requireUppercase" {% if settings.password_require_uppercase %}checked{% endif %}>
-                                            <label class="form-check-label" for="requireUppercase">
-                                                Majuscules requises
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="password_require_numbers" id="requireNumbers" {% if settings.password_require_numbers %}checked{% endif %}>
-                                            <label class="form-check-label" for="requireNumbers">
-                                                Chiffres requis
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="password_require_symbols" id="requireSymbols" {% if settings.password_require_symbols %}checked{% endif %}>
-                                            <label class="form-check-label" for="requireSymbols">
-                                                Symboles requis
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% comment %} <div class="form-group mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="two_factor_auth" id="twoFactorAuth" {% if settings.two_factor_auth %}checked{% endif %}>
-                                    <label class="form-check-label" for="twoFactorAuth">
-                                        Authentification à deux facteurs
-                                    </label>
-                                </div>
-                            </div> {% endcomment %}
-
-                            <div class="alert alert-warning">
-                                <i class="mdi mdi-shield-alert"></i>
-                                <strong>Attention:</strong> Les modifications de sécurité prendront effet lors de la prochaine connexion.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Appearance Settings -->
-                <div class="tab-pane fade" id="appearance" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Apparence</h5>
-                            
-                            <input type="hidden" name="primary_color" id="primaryColorInput" value="{{ settings.primary_color }}">
-                            
-                            <div class="form-group mb-3">
-                                <label>Thème par défaut</label>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="default_theme" id="lightTheme" value="light" {% if settings.default_theme == "light" %}checked{% endif %}>
-                                            <label class="form-check-label" for="lightTheme">
-                                                <i class="mdi mdi-weather-sunny me-2"></i> Clair
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="default_theme" id="darkTheme" value="dark" {% if settings.default_theme == "dark" %}checked{% endif %}>
-                                            <label class="form-check-label" for="darkTheme">
-                                                <i class="mdi mdi-weather-night me-2"></i> Sombre
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="default_theme" id="autoTheme" value="auto" {% if settings.default_theme == "auto" %}checked{% endif %}>
-                                            <label class="form-check-label" for="autoTheme">
-                                                <i class="mdi mdi-theme-light-dark me-2"></i> Auto
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <label>Couleur d'accent</label>
-                                <div class="d-flex gap-2">
-                                    <div class="color-option {% if settings.primary_color == '#02A195' %}selected{% endif %}" style="background: #02A195;" data-color="#02A195" title="Esacode (défaut)"></div>
-                                    <div class="color-option {% if settings.primary_color == '#1a73e8' %}selected{% endif %}" style="background: #1a73e8;" data-color="#1a73e8" title="Bleu"></div>
-                                    <div class="color-option {% if settings.primary_color == '#28a745' %}selected{% endif %}" style="background: #28a745;" data-color="#28a745" title="Vert"></div>
-                                    <div class="color-option {% if settings.primary_color == '#dc3545' %}selected{% endif %}" style="background: #dc3545;" data-color="#dc3545" title="Rouge"></div>
-                                    <div class="color-option {% if settings.primary_color == '#6f42c1' %}selected{% endif %}" style="background: #6f42c1;" data-color="#6f42c1" title="Violet"></div>
-                                </div>
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="compact_mode" id="compactMode" {% if settings.compact_mode %}checked{% endif %}>
-                                    <label class="form-check-label" for="compactMode">
-                                        Mode compact
-                                    </label>
-                                </div>
-                                <small class="text-muted">Réduit l'espacement pour afficher plus d'informations</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Backup Settings -->
-                <div class="tab-pane fade" id="backup" role="tabpanel">
-                    <div class="card border">
-                        <div class="card-body">
-                            <h5 class="header-title border-bottom mb-3 pb-2">Sauvegarde et restauration</h5>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Sauvegarde automatique</h6>
-                                    <div class="form-group mb-3">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="auto_backup" id="autoBackup" {% if settings.auto_backup %}checked{% endif %}>
-                                            <label class="form-check-label" for="autoBackup">
-                                                Sauvegarde automatique
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="form-group mb-3">
-                                        <label>Fréquence</label>
-                                        <select class="form-control" name="backup_frequency">
-                                            <option value="daily" {% if settings.backup_frequency == "daily" %}selected{% endif %}>Quotidienne</option>
-                                            <option value="weekly" {% if settings.backup_frequency == "weekly" %}selected{% endif %}>Hebdomadaire</option>
-                                            <option value="monthly" {% if settings.backup_frequency == "monthly" %}selected{% endif %}>Mensuelle</option>
-                                        </select>
-                                    </div>
-
-                                    <button type="button" class="btn btn-primary" onclick="createBackup()">
-                                        <i class="mdi mdi-backup-restore"></i> Créer une sauvegarde
-                                    </button>
-                                </div>
-
-                                {% comment %} <div class="col-md-6">
-                                    <h6>Sauvegardes disponibles</h6>
-                                    <div class="list-group">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>backup_22_10_2025.sql</strong>
-                                                <br><small class="text-muted">Aujourd'hui {{ settings.updated_at }} - 12.5 MB</small>
-                                            </div>
-                                            <div>
-                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="downloadBackup('22_10_2025')">
-                                                    <i class="mdi mdi-download"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteBackup('22_10_2025')">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div> {% endcomment %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
-</div>
+
+    <!-- Accès -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><i class="mdi mdi-shield-outline text-teal"></i>Accès & Sécurité</div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);border-radius:var(--radius-sm);margin-bottom:10px;">
+            <div>
+              <div style="font-weight:600;color:var(--text-1);font-size:13.5px;margin-bottom:2px;">Mode maintenance</div>
+              <div style="font-size:12px;color:var(--text-3);">Désactive les transferts pour tous les utilisateurs</div>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="maintenance_mode" style="width:38px;height:20px;">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12);border-radius:var(--radius-sm);margin-bottom:10px;">
+            <div>
+              <div style="font-weight:600;color:var(--text-1);font-size:13.5px;margin-bottom:2px;">Nouvelles inscriptions</div>
+              <div style="font-size:12px;color:var(--text-3);">Autoriser de nouveaux utilisateurs à s'inscrire</div>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="allow_registrations" checked style="width:38px;height:20px;">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Durée de session admin (min)</label>
+            <input type="number" class="form-control" name="session_duration" placeholder="60">
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Tentatives de connexion max</label>
+            <input type="number" class="form-control" name="max_login_attempts" placeholder="5">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paydunya -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><i class="mdi mdi-api text-teal"></i>Configuration Paydunya</div>
+        <div class="card-body">
+          <div class="alert alert-info mb-4">
+            <i class="mdi mdi-shield-lock-outline me-2"></i>
+            Les clés secrètes Paydunya (Master Key, Private Key, Token) sont configurées dans <code>settings.py</code> pour des raisons de sécurité.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Environnement</label>
+              <select class="form-select" name="paydunya_env">
+                <option value="test">Test (Sandbox)</option>
+                <option value="live" selected>Live (Production)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Timeout paiement (secondes)</label>
+              <input type="number" class="form-control" name="payment_timeout" placeholder="300">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Webhook URL</label>
+              <input type="text" class="form-control" placeholder="/api/webhook/paydunya/" readonly style="color:var(--text-3);">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </form>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function saveSettings() {
-    document.getElementById('settingsForm').submit();
-}
-
-function resetToDefaults() {
-    if (confirm('Êtes-vous sûr de vouloir restaurer les paramètres par défaut ?')) {
-        const form = document.getElementById('settingsForm');
-        form.action = form.action + '?reset=1';
-        form.submit();
-    }
-}
-
-function regenerateApiKey() {
-    if (confirm('Êtes-vous sûr de vouloir régénérer la clé API ? L\'ancienne clé sera invalidée.')) {
-        $.post("{% url 'custom_admin:settings' %}", {regenerate_key: 1}, function() {
-            showToast('Nouvelle clé API générée', 'success');
-            location.reload();
-        });
-    }
-}
-
-function testEmail() {
-    showToast('Test d\'email en cours...', 'info');
-    setTimeout(() => {
-        showToast('Email de test envoyé avec succès!', 'success');
-    }, 2000);
-}
-
-function createBackup() {
-    showToast('Création de la sauvegarde en cours...', 'info');
-    setTimeout(() => {
-        showToast('Sauvegarde créée avec succès!', 'success');
-        location.reload();
-    }, 3000);
-}
-
-$('.color-option').on('click', function() {
-    $('.color-option').removeClass('selected');
-    $(this).addClass('selected');
-    const color = $(this).data('color');
-    $('#primaryColorInput').val(color);
-    document.documentElement.style.setProperty('--esacode-primary', color);
-    showToast('Couleur d\'accent mise à jour', 'success');
-});
-
-function showToast(message, type = 'info') {
-    if (window.EsacodeAdmin && window.EsacodeAdmin.showToast) {
-        window.EsacodeAdmin.showToast(message, type);
-    } else {
-        alert(message);
-    }
-}
-</script>
-
-<style>
-.color-option {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.color-option:hover,
-.color-option.selected {
-    border-color: #333;
-    transform: scale(1.1);
-}
-
-.nav-pills .nav-link {
-    color: #6c757d;
-    margin-bottom: 0.5rem;
-    border-radius: 8px;
-}
-
-.nav-pills .nav-link.active {
-    background: var(--esacode-primary);
-    color: white;
-}
-</style>
 {% endblock %}

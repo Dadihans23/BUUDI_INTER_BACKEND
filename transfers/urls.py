@@ -5,10 +5,9 @@ from .views import (
     ConfirmDebitView,
     CreditReceiverView,
     FeesConfigView,
-    TransferStatusView ,
-    # launch_credit_from_webhook ,
-    
-    UserTransactionsView
+    TransferStatusView,
+    UserTransactionsView,
+    paydunya_webhook,
 )
 
 urlpatterns = [
@@ -19,13 +18,8 @@ urlpatterns = [
     path('<int:transfer_id>/status/', TransferStatusView.as_view(), name='transfer-status'),
     path('my-transactions/', UserTransactionsView.as_view(), name='user-transactions'),
 
-
-    
-    # path('webhook-paydunya/', paydunya_webhook, name='webhook'),
-    # path('launch-credit/', launch_credit_from_webhook, name='launch-credit'),
-    # path('update-status/', update_transfer_status, name='update-status'),
-
-
+    # Webhook Paydunya : callback automatique après déboursement
+    path('webhook-paydunya/', paydunya_webhook, name='webhook-paydunya'),
 ]
 
 

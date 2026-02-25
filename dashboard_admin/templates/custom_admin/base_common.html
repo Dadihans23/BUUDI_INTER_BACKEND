@@ -1,209 +1,500 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" data-bs-theme="light" data-layout="vertical">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <title>{% block title %}Transfert Admin{% endblock %}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Buudi Admin{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+  /* ── Variables ── */
+  :root {
+    --bg:          #0f172a;
+    --bg-card:     #1e293b;
+    --bg-hover:    #263248;
+    --border:      #334155;
+    --teal:        #14b8a6;
+    --teal-10:     rgba(20,184,166,.10);
+    --teal-20:     rgba(20,184,166,.20);
+    --text-1:      #f1f5f9;
+    --text-2:      #94a3b8;
+    --text-3:      #475569;
+    --green:       #22c55e;
+    --green-10:    rgba(34,197,94,.10);
+    --gold:        #f59e0b;
+    --gold-10:     rgba(245,158,11,.10);
+    --red:         #ef4444;
+    --red-10:      rgba(239,68,68,.10);
+    --blue:        #3b82f6;
+    --blue-10:     rgba(59,130,246,.10);
+    --purple:      #a78bfa;
+    --purple-10:   rgba(167,139,250,.10);
+    --sidebar-w:   240px;
+    --topbar-h:    56px;
+    --radius:      10px;
+    --radius-sm:   7px;
+    --shadow:      0 1px 3px rgba(0,0,0,.4);
+  }
 
-    <link rel="shortcut icon" href="{% static 'custom_admin/images/favicon.ico' %}">
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text-2);
+    -webkit-font-smoothing: antialiased;
+  }
 
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="{% static 'custom_admin/css/plugins/simplebar.min.css' %}">
-    <link href="{% static 'custom_admin/css/icons.css' %}" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/style.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'custom_admin/css/esacode-theme.css' %}">
-    {% block extra_css %}{% endblock %}
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: #0b1526;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+  .sidebar-logo-icon {
+    width: 32px; height: 32px;
+    background: var(--teal);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800; font-size: 16px;
+    color: #0f172a;
+    flex-shrink: 0;
+  }
+  .sidebar-logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 15px;
+    color: var(--text-1);
+  }
+  .sidebar-section {
+    padding: 8px 8px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--text-3);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .sidebar-nav {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background .15s, color .15s;
+    position: relative;
+  }
+  .nav-item i { font-size: 18px; width: 20px; text-align: center; flex-shrink: 0; }
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-1); }
+  .nav-item.active { background: var(--teal-10); color: var(--teal); }
+  .nav-item .badge-pill {
+    margin-left: auto;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .nav-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 8px;
+  }
+  .sidebar-bottom {
+    padding: 8px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-w);
+    right: 0;
+    height: var(--topbar-h);
+    background: #0b1526;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 99;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-user {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-2);
+  }
+  .topbar-avatar {
+    width: 30px; height: 30px;
+    background: var(--teal-10);
+    border: 1px solid var(--teal-20);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--teal);
+  }
+
+  /* ── Main content ── */
+  .main-wrapper {
+    margin-left: var(--sidebar-w);
+    padding-top: var(--topbar-h);
+    min-height: 100vh;
+  }
+  .main-content {
+    padding: 28px 24px;
+  }
+
+  /* ── Bootstrap overrides ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body { padding: 18px; }
+  .card-footer {
+    background: transparent;
+    border-top: 1px solid var(--border);
+    padding: 12px 18px;
+  }
+
+  /* Table */
+  .table { color: var(--text-2); margin: 0; }
+  .table > thead > tr > th {
+    background: rgba(255,255,255,.02);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+  .table > tbody > tr > td {
+    border-bottom: 1px solid rgba(51,65,85,.5);
+    padding: 12px 16px;
+    vertical-align: middle;
+    color: var(--text-2);
+  }
+  .table > tbody > tr:last-child > td { border-bottom: none; }
+  .table-hover > tbody > tr:hover > td { background: rgba(255,255,255,.02); }
+
+  /* Form */
+  .form-control, .form-select {
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-1);
+    font-size: 13.5px;
+    padding: 8px 12px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .form-control::placeholder { color: var(--text-3); }
+  .form-control:focus, .form-select:focus {
+    background: rgba(255,255,255,.05);
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(20,184,166,.15);
+    color: var(--text-1);
+    outline: none;
+  }
+  .form-select option { background: var(--bg-card); }
+  .form-label {
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+  }
+  .form-check-input { background-color: var(--bg-hover); border-color: var(--border); }
+  .form-check-input:checked { background-color: var(--teal); border-color: var(--teal); }
+  .input-group-text {
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    color: var(--text-3);
+  }
+  .input-group .form-control { border-left: none; }
+
+  /* Buttons */
+  .btn { font-size: 13px; font-weight: 500; border-radius: var(--radius-sm); padding: 7px 14px; }
+  .btn-sm { font-size: 12px; padding: 5px 10px; }
+  .btn-primary { background: var(--teal); border-color: var(--teal); color: #0f172a; font-weight: 600; }
+  .btn-primary:hover { background: #0ea5a0; border-color: #0ea5a0; color: #0f172a; }
+  .btn-outline-secondary { border-color: var(--border); color: var(--text-2); }
+  .btn-outline-secondary:hover { background: var(--bg-hover); border-color: var(--border); color: var(--text-1); }
+  .btn-outline-primary { border-color: var(--teal); color: var(--teal); }
+  .btn-outline-primary:hover { background: var(--teal-10); color: var(--teal); }
+  .btn-outline-danger { border-color: var(--red); color: var(--red); }
+  .btn-outline-danger:hover { background: var(--red-10); color: var(--red); }
+  .btn-outline-warning { border-color: var(--gold); color: var(--gold); }
+  .btn-outline-warning:hover { background: var(--gold-10); color: var(--gold); }
+  .btn-warning { background: var(--gold); border-color: var(--gold); color: #0f172a; font-weight: 600; }
+  .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+
+  /* Badges */
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; }
+  .bg-success { background: var(--green-10) !important; color: var(--green) !important; border: 1px solid rgba(34,197,94,.2); }
+  .bg-danger { background: var(--red-10) !important; color: var(--red) !important; border: 1px solid rgba(239,68,68,.2); }
+  .bg-warning { background: var(--gold-10) !important; color: var(--gold) !important; border: 1px solid rgba(245,158,11,.2); }
+  .bg-info { background: var(--blue-10) !important; color: var(--blue) !important; border: 1px solid rgba(59,130,246,.2); }
+  .bg-primary { background: var(--teal-10) !important; color: var(--teal) !important; border: 1px solid rgba(20,184,166,.2); }
+  .bg-secondary { background: rgba(71,85,105,.2) !important; color: var(--text-2) !important; border: 1px solid var(--border); }
+
+  /* Alert */
+  .alert { border-radius: var(--radius-sm); font-size: 13px; }
+  .alert-success { background: var(--green-10); border: 1px solid rgba(34,197,94,.2); color: var(--green); }
+  .alert-danger { background: var(--red-10); border: 1px solid rgba(239,68,68,.2); color: var(--red); }
+  .alert-warning { background: var(--gold-10); border: 1px solid rgba(245,158,11,.2); color: var(--gold); }
+  .alert-info { background: var(--blue-10); border: 1px solid rgba(59,130,246,.2); color: var(--blue); }
+  .btn-close { filter: invert(1) brightness(.7); }
+
+  /* Pagination */
+  .page-link { background: var(--bg-card); border-color: var(--border); color: var(--text-2); font-size: 12px; }
+  .page-link:hover { background: var(--bg-hover); border-color: var(--border); color: var(--text-1); }
+  .page-item.active .page-link { background: var(--teal); border-color: var(--teal); color: #0f172a; }
+  .page-item.disabled .page-link { background: rgba(255,255,255,.02); color: var(--text-3); }
+
+  /* Stat card */
+  .stat-card { padding: 18px; }
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-1);
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+  /* Page header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .page-title { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-1); margin: 0; }
+  .page-subtitle { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+
+  /* Back link */
+  .back-link {
+    font-size: 12px;
+    color: var(--text-3);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .back-link:hover { color: var(--text-2); }
+
+  /* Misc */
+  .text-teal { color: var(--teal) !important; }
+  .text-green { color: var(--green) !important; }
+  .text-gold { color: var(--gold) !important; }
+  .text-muted { color: var(--text-3) !important; }
+  hr { border-color: var(--border); opacity: 1; }
+  code { color: var(--teal); background: var(--teal-10); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+  {% block extra_css %}{% endblock %}
+  </style>
 </head>
 <body>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <nav class="navbar navbar-expand-lg navbar-default border bg-body-tertiary py-0">
-            <div class="container-fluid">
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <div class="navbar-header d-lg-none">
-                        <div class="logo-sm">
-                            <a href="javascript:void(0)" id="sidebar-toggle-button"><i class="fa fa-bars"></i></a>
-                        </div>
-                    </div>
-                    <div class="d-flex">
-                        <ul class="nav navbar-nav d-none d-lg-flex mb-2 mb-lg-0">
-                            <li><a href="javascript:void(0)" id="toggle-fullscreen"><i class="mdi mdi-fullscreen"></i></a></li>
-                        </ul>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="dropdown ms-1 user-dropdown header-item">
-                            <a class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle border-0 dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <img src="{% static 'custom_admin/images/avatar/user_logo.png' %}" alt="{{ user.username }}" class="rounded-circle user-avatar" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #0d9488;">
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% block user_dropdown_menu %}
-                                <li><a href="{% url 'custom_admin:settings' %}">Paramètres</a></li>
-                                <li role="separator" class="divider"></li>
-                                {% endblock %}
-                                <li>
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                                        Se déconnecter
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
+<!-- Sidebar -->
+<aside class="sidebar">
+  <a href="{% url 'custom_admin:dashboard' %}" class="sidebar-logo" style="text-decoration:none;">
+    <div class="sidebar-logo-icon">B</div>
+    <span class="sidebar-logo-text">Buudi Admin</span>
+  </a>
+
+  <nav class="sidebar-nav">
+
+    <div class="sidebar-section">Principal</div>
+
+    <a href="{% url 'custom_admin:dashboard' %}"
+       class="nav-item {% if '/dashboard' in request.path or request.path == '/admin/' %}active{% endif %}">
+      <i class="mdi mdi-view-dashboard-outline"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <div class="sidebar-section">Opérations</div>
+
+    <a href="{% url 'custom_admin:users' %}"
+       class="nav-item {% if '/users' in request.path %}active{% endif %}">
+      <i class="mdi mdi-account-multiple-outline"></i>
+      <span>Utilisateurs</span>
+    </a>
+
+    <a href="{% url 'custom_admin:transfers' %}"
+       class="nav-item {% if '/transfers' in request.path and '/recredits' not in request.path %}active{% endif %}">
+      <i class="mdi mdi-swap-horizontal"></i>
+      <span>Transferts</span>
+    </a>
+
+    <a href="{% url 'custom_admin:recredits' %}"
+       class="nav-item {% if '/recredits' in request.path %}active{% endif %}">
+      <i class="mdi mdi-alert-circle-outline"></i>
+      <span>Re-crédit</span>
+      {% if pending_recredits_count > 0 %}
+      <span class="badge-pill">{{ pending_recredits_count }}</span>
+      {% endif %}
+    </a>
+
+    <a href="{% url 'custom_admin:manual_disburse' %}"
+       class="nav-item {% if '/disburse' in request.path %}active{% endif %}">
+      <i class="mdi mdi-send-circle-outline"></i>
+      <span>Déboursement direct</span>
+    </a>
+
+    <div class="sidebar-section">Finance</div>
+
+    <a href="{% url 'custom_admin:fees' %}"
+       class="nav-item {% if '/fees' in request.path %}active{% endif %}">
+      <i class="mdi mdi-percent-outline"></i>
+      <span>Frais opérateurs</span>
+    </a>
+
+    <a href="{% url 'custom_admin:revenue_analytics' %}"
+       class="nav-item {% if '/revenue-analytics' in request.path %}active{% endif %}">
+      <i class="mdi mdi-chart-line"></i>
+      <span>Analytiques</span>
+    </a>
+
+    <div class="sidebar-section">Support</div>
+
+    <a href="{% url 'custom_admin:support_list' %}"
+       class="nav-item {% if '/support-admin' in request.path %}active{% endif %}">
+      <i class="mdi mdi-headset"></i>
+      <span>Support client</span>
+      {% if open_count > 0 %}
+      <span class="badge-pill">{{ open_count }}</span>
+      {% endif %}
+    </a>
+
+    <a href="{% url 'custom_admin:audit_log' %}"
+       class="nav-item {% if '/audit-log' in request.path %}active{% endif %}">
+      <i class="mdi mdi-clipboard-text-clock-outline"></i>
+      <span>Journal d'audit</span>
+    </a>
+
+    <div class="nav-divider"></div>
+
+    <a href="{% url 'custom_admin:settings' %}"
+       class="nav-item {% if '/settings' in request.path %}active{% endif %}">
+      <i class="mdi mdi-cog-outline"></i>
+      <span>Paramètres</span>
+    </a>
+
+  </nav>
+
+  <div class="sidebar-bottom">
+    <a href="{% url 'custom_admin:logout' %}" class="nav-item" style="color:var(--red);">
+      <i class="mdi mdi-logout"></i>
+      <span>Déconnexion</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span style="font-size:13px;color:var(--text-3);">{% block breadcrumb %}Dashboard{% endblock %}</span>
+  </div>
+  <div class="topbar-right">
+    {% if messages %}
+    <div style="position:relative;">
+      <!-- messages handled in content -->
     </div>
-
-    <!-- Page Sidebar -->
-    <div class="page-sidebar">
-        <a class='logo-box' href='{% url "custom_admin:dashboard" %}'>
-            <span class="d-flex align-items-center">
-                <span class="fw-bold" style="font-size: 1.2rem; color: #0d9488;">Transfert Admin</span>
-            </span>
-            <i class="mdi mdi-close" id="sidebar-toggle-button-close"></i>
-        </a>
-        <div class="page-sidebar-inner">
-            <div class="page-sidebar-menu simple-bar" data-simplebar="">
-                <ul class="accordion-menu">
-                    <!-- Dashboard -->
-                    <li class="accordion-menu-item">
-                        <a href="{% url 'custom_admin:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                            <i class="menu-icon mdi mdi-view-dashboard"></i><span>Tableau de bord</span>
-                        </a>
-                    </li>
-
-                    <!-- Utilisateurs -->
-                    <li class="accordion-menu-item has-submenu {% if 'user' in request.path %}opened{% endif %}">
-                        <a href="#" class="accordion-toggle {% if 'user' in request.path %}opened{% endif %}">
-                            <i class="menu-icon mdi mdi-account-multiple"></i><span>Utilisateurs</span>
-                            <i class="mdi mdi-chevron-down accordion-arrow"></i>
-                        </a>
-                        <ul class="sub-menu" {% if 'user' in request.path %}style="display: block;"{% endif %}>
-                            <li><a href="{% url 'custom_admin:users' %}" class="{% if request.resolver_match.url_name in 'users user_detail user_edit user_create' %}active{% endif %}">Liste des utilisateurs</a></li>
-                            <li><a href="{% url 'custom_admin:user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Ajouter un utilisateur</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- Transferts -->        
-                    <li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
-                       <a href="{% url 'custom_admin:transfers' %}" 
-                                    class="{% if request.resolver_match.url_name in 'transfers transfer_detail transfer_edit transfer_delete transfer_retry' %}active{% endif %}">
-                                    
-                                <i class="menu-icon mdi mdi-transfer"></i><span>Tous les transferts</span>
-
-                        </a>
-                    </li>
-
-
-                    <!-- Frais Opérateurs -->
-                    <li class="accordion-menu-item {% if request.resolver_match.url_name in 'fees edit_fee' %}active{% endif %}">
-                        <a href="{% url 'custom_admin:fees' %}">
-                            <i class="menu-icon mdi mdi-percent"></i><span>Frais Opérateurs</span>
-                        </a>
-                    </li>
-
-                    <!-- Analytics Revenus -->
-                    <li class="accordion-menu-item {% if request.resolver_match.url_name == 'revenue_analytics' %}active{% endif %}">
-                        <a href="{% url 'custom_admin:revenue_analytics' %}">
-                            <i class="menu-icon mdi mdi-chart-line"></i><span>Analytics Revenus</span>
-                        </a>
-                    </li>
-
-                    {% comment %} <!-- Paramètres -->
-                    <li class="accordion-menu-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-                        <a href="{% url 'custom_admin:settings' %}">
-                            <i class="menu-icon mdi mdi-cog"></i><span>Paramètres</span>
-                        </a>
-                    </li> {% endcomment %}
-
-                    <!-- Admin Django -->
-                    <li class="accordion-menu-item">
-                        <a href="{% url 'admin:index' %}">
-                            <i class="menu-icon mdi mdi-tune"></i><span>Admin Django</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+    {% endif %}
+    <div class="topbar-user">
+      <div class="topbar-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+      <span>{{ request.user.username }}</span>
     </div>
+  </div>
+</header>
 
-    <!-- Page Content -->
-    <div class="page-content">
-        <div class="page-inner">
-            {% block content %}{% endblock %}
-        </div>
-        
-        <!-- Footer -->
-        <div class="page-footer">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <p class="mb-0">&copy; <script>document.write(new Date().getFullYear())</script> Buudi Inter - Transfert d'argent</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Main -->
+<div class="main-wrapper">
+  <div class="main-content">
+
+    <!-- Flash messages -->
+    {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+        <i class="mdi mdi-{% if message.tags == 'error' %}alert-circle{% elif message.tags == 'success' %}check-circle{% else %}information{% endif %}-outline me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
     </div>
+    {% endif %}
 
-    <!-- JavaScript Files -->
-    <script src="{% static 'custom_admin/js/plugins/jquery.min.js' %}"></script>
-    <script src="{% static 'custom_admin/js/plugins/simplebar.min.js' %}"></script>
-    <script src="{% static 'custom_admin/js/plugins/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'custom_admin/js/custom.js' %}"></script>
-    <script src="{% static 'custom_admin/js/esacode-admin.js' %}"></script>
-    
-    {% block extra_js %}{% endblock %}
+    {% block content %}{% endblock %}
 
-    <!-- Modal de suppression -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header border-0 bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="mdi mdi-alert-circle me-2"></i> Confirmer la suppression
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <i class="mdi mdi-delete-variant text-danger" style="font-size: 4rem;"></i>
-                    <h6 class="my-3">Êtes-vous sûr de vouloir supprimer cet élément ?</h6>
-                    <p class="text-muted">Cette action est irréversible.</p>
-                </div>
-                <div class="modal-footer border-0 justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                        <i class="mdi mdi-delete me-1"></i> Supprimer
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
+</div>
 
-    <!-- Modal de déconnexion -->
-    <div class="modal fade" id="logoutModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header border-0 bg-warning text-dark">
-                    <h5 class="modal-title">
-                        <i class="mdi mdi-logout me-2"></i> Confirmer la déconnexion
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <i class="mdi mdi-help-circle text-warning" style="font-size: 4rem;"></i>
-                    <h6 class="my-3">Voulez-vous vraiment vous déconnecter ?</h6>
-                </div>
-                <div class="modal-footer border-0 justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Annuler</button>
-                     <a href="{% url 'custom_admin:logout' %}" class="btn btn-warning">
-                        <i class="mdi mdi-logout me-1"></i> Se déconnecter
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>
